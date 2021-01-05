@@ -13,5 +13,6 @@ Somewhat user-friendly tool to help parse out structured text from a pdf documen
 conda env create -f environment.yml
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 jupyter labextension install @jupyter-widgets/jupyterlab-manager ipyevents
+jupyter labextension install @jupyter-widgets/jupyterlab-manager ipycanvas
 pip install -e pdf_annotation
 ```
