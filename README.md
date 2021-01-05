@@ -7,3 +7,11 @@ Somewhat user-friendly tool to help parse out structured text from a pdf documen
 ## Notes
 * You'll need `ipyevents` and `ipywidgets`
 * Conda should be able to handle everything else. `pytesseract` should be ok, but it has been problematic in the past, maybe only if `Tesseract` is installed separately??? Should be fine.
+
+## Installation
+```bash
+conda env create -f environment.yml
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+jupyter labextension install @jupyter-widgets/jupyterlab-manager ipyevents
+pip install -e pdf_annotation
+```
