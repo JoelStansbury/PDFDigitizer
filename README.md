@@ -25,19 +25,31 @@ pip install -e pdf_annotation
 * Image_to_boxes could also be run via subprocess to minimize the impact on user experience.
 * Store the bboxes as percentages of the full page, as opposed to pixel locations, so we can easily scale dpi.
 
-Database meta-model
-```
-Database of docs
-  filename                  (path())
-  words                     sum([tb.words for tb in data], set())
-  data:
-    text_blocks
-        page_num
-        category            (label assigned in the parsing tool)
-        bbox                [x1, y1, x2, y2]
-        words               (set() of words within)
-        content:
-          character_string  (concated chars found by image_to_bboxes)
-          bboxes            (2Darray (Nx4) [[x1, y2, x2, y2],...], where N=len(character_string))
-```
-
+* Database meta-model
+  * Allows for bbox reconstruction in text-block identifier
+    ```
+    Database of docs
+      filename                  (path())
+      words                     sum([tb.words for tb in data], set())
+      data:
+        text_blocks
+            page_num
+            category            (label assigned in the parsing tool)
+            bbox                [x1, y1, x2, y2]
+            words               (set() of words within)
+            content:
+              character_string  (concat'ed chars found by image_to_bboxes)
+              bboxes            (2Darray (Nx4) [[x1, y2, x2, y2],...], where N=len(character_string))
+    ```
+  * Alternative
+    ```
+    Database of docs
+      filename                  
+      words                     sum([tb.words for tb in data], set())
+      data:
+        categories
+            name                (label assigned in the parsing tool)
+            words               (set() of words within)
+            character_string    (concat'ed chars found by image_to_bboxes)
+            bboxes              (2Darray (Nx5) [[page, x1, y2, x2, y2],...], where N=len(character_string))
+    ```
