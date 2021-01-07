@@ -32,7 +32,7 @@ Database of docs
     bboxes            (2Darray (Nx5) [[page_num, x1, y2, x2, y2],...], where N=len(character_string))
 ```
 
-# OR
+OR
 
 ```
 Database of docs
@@ -47,3 +47,5 @@ Database of docs
           character_string  (concated chars found by image_to_bboxes)
           bboxes            (2Darray (Nx4) [[x1, y2, x2, y2],...], where N=len(character_string))
 ```
+
+> Whatever we do, I'd like to store the bboxes as percentages of the full page, as opposed to pixel locations, so we can easily scale dpi.
