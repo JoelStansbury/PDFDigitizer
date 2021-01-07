@@ -22,18 +22,10 @@ pip install -e pdf_annotation
 ### Searching Functionality
 * Keep a set of all words in the doc for quick doc retreival
 * I don't think image_to_bboxes will give spaces, if this is the case then we'll need to make an alg to do this, which will probably suck. Or we can run image_to_string to get the splitable text used for doc retreival, then image_to_bboxes to get the backend charboxes used for searching.
+* Image_to_boxes could also be run via subprocess to minimize the impact on user experience.
+* Store the bboxes as percentages of the full page, as opposed to pixel locations, so we can easily scale dpi.
 
-```
-Database of docs
-  filename            (path())
-  words               (set() of words within)
-  data:
-    character_string  (concated chars found by image_to_bboxes)
-    bboxes            (2Darray (Nx5) [[page_num, x1, y2, x2, y2],...], where N=len(character_string))
-```
-
-OR
-
+Database meta-model
 ```
 Database of docs
   filename                  (path())
@@ -41,6 +33,7 @@ Database of docs
   data:
     text_blocks
         page_num
+        category            (label assigned in the parsing tool)
         bbox                [x1, y1, x2, y2]
         words               (set() of words within)
         content:
@@ -48,4 +41,3 @@ Database of docs
           bboxes            (2Darray (Nx4) [[x1, y2, x2, y2],...], where N=len(character_string))
 ```
 
-> Whatever we do, I'd like to store the bboxes as percentages of the full page, as opposed to pixel locations, so we can easily scale dpi.
