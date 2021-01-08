@@ -1,4 +1,4 @@
-# PDF Digitizer (_Now with back-button support!!_)
+# PDF Digitizer (_It has a back button!!_)
 Somewhat user-friendly tool to help parse out structured text from a pdf document
 
 ```
