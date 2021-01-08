@@ -25,8 +25,7 @@ pip install -e pdf_annotation
 ## TODO:
 ### Searching Functionality
 - [x] Store OCR results in database for later use.
-- [x] ~~Store the bboxes as percentages of the full page, as opposed to pixel locations, so we can easily scale dpi.~~ <br>
-  Opted to store the pixel value and dimensions of the image to avoid floating-point error.
+- [ ] Store the bboxes as percentages of the full page, as opposed to pixel locations, so we can easily scale dpi.
 - [x] Database meta-model
   ```
   fname: {
