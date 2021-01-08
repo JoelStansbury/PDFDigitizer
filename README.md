@@ -24,36 +24,17 @@ pip install -e pdf_annotation
 
 ## TODO:
 ### Searching Functionality
-* Keep a set of all words in the doc for quick doc retreival
-* I don't think image_to_bboxes will give spaces, if this is the case then we'll need to make an alg to do this, which will probably suck. Or we can run image_to_string to get the splitable text used for doc retreival, then image_to_bboxes to get the backend charboxes used for searching.
-* Image_to_boxes could also be run via subprocess to minimize the impact on user experience.
-* Store the bboxes as percentages of the full page, as opposed to pixel locations, so we can easily scale dpi.
-
-* Database meta-model
-  * Allows for bbox reconstruction in text-block identifier
-    ```
-    Database of docs
-      filename                  (path())
-      words                     sum([tb.words for tb in data], set())
-      data:
-        text_blocks
-            page_num
-            category            (label assigned in the parsing tool)
-            bbox                [x1, y1, x2, y2]
-            words               (set() of words within)
-            content:
-              character_string  (concat'ed chars found by image_to_bboxes)
-              bboxes            (2Darray (Nx4) [[x1, y2, x2, y2],...], where N=len(character_string))
-    ```
-  * Alternative
-    ```
-    Database of docs
-      filename                  
-      words                     sum([tb.words for tb in data], set())
-      data:
-        categories
-            name                (label assigned in the parsing tool)
-            words               (set() of words within)
-            character_string    (concat'ed chars found by image_to_bboxes)
-            bboxes              (2Darray (Nx5) [[page, x1, y2, x2, y2],...], where N=len(character_string))
-    ```
+- [x] Store OCR results in database for later use.
+- [x] ~~Store the bboxes as percentages of the full page, as opposed to pixel locations, so we can easily scale dpi.~~ <br>
+  Opted to store the pixel value and dimensions of the image to avoid floating-point error.
+- [x] Database meta-model
+  ```
+  fname: {
+                "sizes":      [(page1width, page1height), ...],
+                "texts":      [["text found from ocr from 1st bbox on page1","..."],[...],...],
+                "categories": [[category of texts[0] from page 1, ...], ...],
+                "textblocks": [[  coords of texts[0] from page 1, ...], ... ],
+            }
+  ```
+- [ ] I don't think image_to_bboxes will give spaces, if this is the case then we'll need to make an alg to do this, which will probably suck. Or we can run image_to_string to get the splitable text used for doc retreival, then image_to_bboxes to get the backend charboxes used for searching.
+- [ ] Image_to_boxes could also be run via subprocess to minimize the impact on user experience.
