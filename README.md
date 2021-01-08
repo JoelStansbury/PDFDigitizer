@@ -1,6 +1,11 @@
-# PDF Digitizer
+# PDF Digitizer (_Now with back-button support!!_)
 Somewhat user-friendly tool to help parse out structured text from a pdf document
 
+```
+Changelog:
+1/8/2021: Added procedures for saving and reloading pages and documents
+
+```
 ## Usage
 [Youtube Video](https://www.youtube.com/watch?v=_My2JVHbknM&ab_channel=JoelS "Video Title")
 
