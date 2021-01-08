@@ -9,11 +9,8 @@ class PdfCanvas(MultiCanvas):
     def __init__(self, **kwargs):
         super().__init__(2, **kwargs)
 
-        # self.layer_categories = []
         self.active_layer = self[1]
         self.bboxes = []
-        # self.w = width
-        # self.h = height
 
         self.active_layer.on_mouse_down(self.mouse_down)
         self.active_layer.on_mouse_move(self.mouse_move)
@@ -23,6 +20,10 @@ class PdfCanvas(MultiCanvas):
         self.mouse_is_down = False
 
     def xywh(self):
+        '''
+        ipycanvas requires xywh coords, but ipyevents (and PIL) uses xyxy, 
+        so conversion is needed to draw the box on the canvas.
+        '''
         x1,y1,x2,y2 = self.rect
         x = min(x1,x2)
         y = min(y1, y2)
@@ -32,7 +33,11 @@ class PdfCanvas(MultiCanvas):
 
     def draw_rect(self, style=None):
         self.clear()
-        self.active_layer.stroke_style = self.stroke_style
+        if style:
+            self.active_layer.stroke_style = style
+        else:
+            self.active_layer.stroke_style = self.stroke_style
+        
         self.active_layer.stroke_rect(*self.xywh())
 
     def clear(self):

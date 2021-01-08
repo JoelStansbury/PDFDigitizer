@@ -23,10 +23,6 @@ class BboxColor(ipyw.HBox):
         self.children = [self.label, self.color_picker]
 
 class BboxColorPicker(ipyw.VBox):
-    categories = []
-    buttons = []
-    hboxes = []
-    btn_idx = {}
 
     add_group_button = ipyw.Button(icon="plus")
     selection = Int().tag(sync=True)
@@ -35,16 +31,19 @@ class BboxColorPicker(ipyw.VBox):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.buttons = []
+        self.hboxes = []
+        self.btn_idx = {}
         self.categories = []
         self.add_group_button.on_click(self.add_group)
         self.add_group_button.click()
         self.categories[0].name="Default"
         self.children = self.hboxes + [self.add_group_button]
-        # self.selection = 0
+        self.selection = 0
         
     
-    def add_group(self, _):
-        cat = BboxColor()
+    def add_group(self, _, name="", style="black"):
+        cat = BboxColor(name, style)
         btn = ipyw.Button(icon="circle")
         hbox = ipyw.HBox([btn, cat])
 
@@ -76,3 +75,16 @@ class BboxColorPicker(ipyw.VBox):
         self.buttons[change["new"]].icon = "circle"
         self.value = self.categories[change["new"]].value
         self.name = self.categories[change["new"]].name
+
+    def params(self):
+        return {
+            "names": [cat.name for cat in self.categories],
+            "styles": [cat.value for cat in self.categories]}
+    
+    def load(self, params):
+        self.categories = []
+        self.buttons = []
+        self.hboxes = []
+        for name,style in zip(params["names"], params["styles"]):
+            self.add_group(None, name=name, style=style)
+            

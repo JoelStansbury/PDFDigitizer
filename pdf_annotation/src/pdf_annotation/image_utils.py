@@ -1,7 +1,7 @@
 import io
 
 from ipywidgets import Image
-from pdf2image import convert_from_path
+from pdf2image import convert_from_path, pdfinfo_from_path
 
 def fit(img, w, h):
     w_old = img.width
@@ -20,6 +20,7 @@ def pil_2_widget(img, format="png"):
 
 class ImageContainer:
     def __init__(self, fname, bulk_render=True):
+        self.info = pdfinfo_from_path(fname)
         self.bulk_render = bulk_render
         if bulk_render:
             self.imgs = convert_from_path(fname, dpi=300)
@@ -28,4 +29,5 @@ class ImageContainer:
     def __getitem__(self, i):
         if self.bulk_render:
             return self.imgs[i]
-        return convert_from_path(self.fname, first_page=i, last_page=i)[0]
+        # manual page indexing starts at 1
+        return convert_from_path(self.fname, first_page=i+1, last_page=i+1, dpi=300)[0]

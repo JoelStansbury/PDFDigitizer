@@ -1,0 +1,5 @@
+pdfs
+__pycache__
+Untitled.*
+*.egg-info
+.ipynb_checkpoints
