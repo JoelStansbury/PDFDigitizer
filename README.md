@@ -37,7 +37,7 @@ pip install -e pdf_annotation
       "texts":      [["text found from ocr from 1st bbox on page1","..."],[...],...],
       "categories": [[category of texts[0] from page 1, ...], ...],
       "textblocks": [[  coords of texts[0] from page 1, ...], ... ],
-    }
+  }
   ```
 - [ ] I don't think image_to_bboxes will give spaces, if this is the case then we'll need to make an alg to do this, which will probably suck. Or we can run image_to_string to get the splitable text used for doc retreival, then image_to_bboxes to get the backend charboxes used for searching.
 - [ ] Image_to_boxes could also be run via subprocess to minimize the impact on user experience.
