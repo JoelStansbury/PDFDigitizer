@@ -141,3 +141,15 @@ class App(ipyw.HBox):
         with out_path.open(mode="w") as f:
             json.dump(self.data, f)
 
+    def to_dict(self):
+        cats = [
+            [
+                self.data['color_picker_params']['names'][j] 
+                for j in i
+                ] for i in self.data['categories']
+            ]
+        res = defaultdict(list)
+        for i,text in enumerate(self.data["texts"]):
+            for j,p in enumerate(text):
+                res[cats[i][j]].append(p)
+        return res
