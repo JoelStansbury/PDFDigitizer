@@ -15,7 +15,6 @@ class PdfCanvas(MultiCanvas):
         self.active_layer.on_mouse_down(self.mouse_down)
         self.active_layer.on_mouse_move(self.mouse_move)
         self.active_layer.on_mouse_up(self.mouse_up)
-
         self.rect = None
         self.mouse_is_down = False
 
@@ -31,7 +30,7 @@ class PdfCanvas(MultiCanvas):
         h = abs(y2-y1)
         return x,y,w,h
 
-    def draw_rect(self, style=None):
+    def draw_rect(self, style="black"):
         self.clear()
         if style:
             self.active_layer.stroke_style = style
@@ -55,6 +54,9 @@ class PdfCanvas(MultiCanvas):
             self.draw_rect()
 
     def mouse_up(self, x, y):
+        # x,y,s = event["relativeX"], event["relativeY"], event["shiftKey"]
+        # if s:
+        #     print("hello",x,y,s)
         self.mouse_is_down = False
         self.bboxes.append(self.rect)
         self.add_layer()
@@ -64,7 +66,7 @@ class PdfCanvas(MultiCanvas):
             self.clear()
 
             old_layer = Canvas(width=self.width, height=self.height)
-            old_layer.stroke_style = self.stroke_style
+            old_layer.stroke_style = "black"
             old_layer.stroke_rect(*self.xywh())
             old_layer.bbox = self.rect
 
@@ -80,3 +82,5 @@ class PdfCanvas(MultiCanvas):
     def pop(self,_=None):
         if len(self._canvases)>2:
             self._canvases = self._canvases[:-1]
+            return True
+        return False

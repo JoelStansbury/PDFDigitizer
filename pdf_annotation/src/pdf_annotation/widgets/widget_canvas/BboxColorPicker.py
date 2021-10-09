@@ -37,7 +37,7 @@ class BboxColorPicker(ipyw.VBox):
         self.categories = []
         self.add_group_button.on_click(self.add_group)
         self.add_group_button.click()
-        self.categories[0].name="Default"
+        self.categories[0].name = "Default"
         self.children = self.hboxes + [self.add_group_button]
         self.selection = 0
         

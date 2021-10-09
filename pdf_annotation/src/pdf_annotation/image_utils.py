@@ -13,6 +13,9 @@ def scale(img, factor):
     h_old = img.height
     return img.resize(size=(int(w_old*factor), int(h_old*factor)), resample=1)
 
+def scale_coords(coords, w, h):
+    return [w*coords[0], h*coords[1], w*coords[2], h*coords[3]]
+    
 def pil_2_widget(img, format="png"):
     imgByteArr = io.BytesIO()
     img.save(imgByteArr, format=format)
