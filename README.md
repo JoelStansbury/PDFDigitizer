@@ -17,10 +17,7 @@ Changelog:
 ## Installation
 ```bash
 conda env create -f environment.yml
-conda activate pdfwidget-env
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-jupyter labextension install @jupyter-widgets/jupyterlab-manager ipyevents
-jupyter labextension install @jupyter-widgets/jupyterlab-manager ipycanvas
+conda activate pdf
 pip install -e pdf_annotation
 ```
 
