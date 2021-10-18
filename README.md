@@ -1,7 +1,6 @@
 # PDF Digitizer (_It has a back button!!_)
 Somewhat user-friendly tool to help parse out structured text from a pdf document
 
-https://www.dote.osd.mil/Publications/Annual-Reports/2020-Annual-Report/
 
 ```
 Changelog:
