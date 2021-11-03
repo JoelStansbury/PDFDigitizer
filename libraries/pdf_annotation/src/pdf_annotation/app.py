@@ -7,15 +7,20 @@ import pytesseract as tess
 from traitlets import observe
 
 from .widgets.canvas import PdfCanvas
-from .widgets.tree import DataNode, TreeWidget
+# from .widgets.tree import DataNode, TreeWidget
+from .widgets.new_ipytree import TreeWidget
+from .widgets.node_detail import NodeDetail
 from .image_utils import fit, scale, pil_2_widget, ImageContainer, scale_coords
-
+from .style import CSS
 
 class App(ipyw.HBox):
 
     def __init__(self, indir, bulk_render=False):
         self.ch, self.cw = 1000, 900
         super().__init__(height=self.ch, width=self.cw)
+        self.add_class("main-app")
+
+        self.node_detail = NodeDetail()
 
         self.bulk_render = bulk_render
         self.file_dd = ipyw.Dropdown(
@@ -28,49 +33,38 @@ class App(ipyw.HBox):
         self.file_dd.observe(self.new_file, "value")
 
         self.canvas = PdfCanvas(height=self.ch, width=self.cw)
-        self.canvas.active_layer.on_mouse_up(self.parse_current_selection)
+        self.canvas.animated_layer.on_mouse_up(self.parse_current_selection)
 
         self.prev_page_button = ipyw.Button(
             icon="arrow-left",
             layout={"width":"50px"}
         )
         self.prev_page_button.on_click(self.prev_page)
-        self.undo_button = ipyw.Button(
-            icon="undo",
-            layout={"width":"50px"}
-        )
-        self.undo_button.on_click(self.undo)
+
         self.next_page_button = ipyw.Button(
             icon="arrow-right",
             layout={"width":"50px"}
         )
         self.next_page_button.on_click(self.next_page)
+
         self.save_page_button = ipyw.Button(
             icon="save",
             layout={"width":"50px"}
         )
         self.save_page_button.on_click(self.save)
+
         self.draw_bboxes_checkbox = ipyw.Checkbox(
             value=False,
             description="Show all Boxes",
             tooltip="Draws bounding boxes over selected section. Also acts as a hyperlink to jump to the start of the selected section."
         )
         self.draw_bboxes_checkbox.observe(self.on_selection_change,"value")
-        self.tool_selector = ipyw.Dropdown(
-            options=[
-                ("Text", self.handle_textblock),
-                ("Image", self.handle_image),
-                ("Table", self.handle_table)
-            ],
-            description="Tool"
-        )
+
 
         self.btns = ipyw.HBox(
             [
-                self.prev_page_button, 
-                self.undo_button, 
-                self.next_page_button, 
-                self.tool_selector,
+                self.prev_page_button,
+                self.next_page_button,
                 self.draw_bboxes_checkbox,
                 self.save_page_button,
             ]
@@ -93,21 +87,20 @@ class App(ipyw.HBox):
 
         if Path(fname).with_suffix('.json').exists():
             with Path(fname).with_suffix('.json').open() as f:
-                self.doc_tree = DataNode().from_dict(json.load(f))
-        else:
-            self.doc_tree = DataNode(str(fname))
+                self.tree_visualizer = TreeWidget(json.load(f))
 
-        self.tree_visualizer = TreeWidget(
-            self.doc_tree, 
-            on_selection_change=self.on_selection_change
-        )
+        tree_box = ipyw.VBox([self.tree_visualizer])
+        tree_box.add_class("doc-tree-outter")
+
         self.children = [
+            tree_box,
             self.canvas, 
             ipyw.VBox(
                 [
+                    CSS,
                     self.file_dd,
                     self.btns,
-                    self.tree_visualizer,
+                    self.node_detail,
                 ]
             ),
         ]
@@ -128,20 +121,22 @@ class App(ipyw.HBox):
                 self.img_index = node.content[0]["page"]
             self.load()
 
-    def undo(self,_=None):
-        if self.changes:
-            self.canvas.pop()
-            path = self.changes.pop()
-            if path is not None:
-                self.tree_visualizer[path].pop()
+    # def undo(self,_=None):
+    #     if self.changes:
+    #         self.canvas.pop()
+    #         path = self.changes.pop()
+    #         if path is not None:
+    #             self.tree_visualizer[path].pop()
 
     def next_page(self, _=None):
         if self.img_index < self.n_pages-1:
+            self.canvas.clear()
             self.img_index +=1
             self.load()
 
     def prev_page(self, _=None):
         if self.img_index > 0:
+            self.canvas.clear()
             self.img_index -=1
             self.load()
 
@@ -168,11 +163,8 @@ class App(ipyw.HBox):
                     self.canvas.rect = coords
                     self.canvas.draw_rect
                     # Mimic a mouse_up event
-                    self.canvas.bboxes.append(coords)
-                    self.canvas.add_layer()
-
-    def add_layer(self, _):
-        self.canvas.add_layer()
+                    # self.canvas.bboxes.append(coords)
+                    # self.canvas.add_layer()
 
 
     def parse_current_selection(self,x,y):
@@ -182,6 +174,7 @@ class App(ipyw.HBox):
         coords = x1,y1,x2,y2
         w,h = self.full_img.width, self.full_img.height
         rel_coords = [x1/w, x2/w, y1/h, y2/h]
+        
         self.tool_selector.value(coords, rel_coords)
     
 
