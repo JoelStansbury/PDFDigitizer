@@ -8,67 +8,32 @@ from traitlets import observe
 
 from .widgets.canvas import PdfCanvas
 # from .widgets.tree import DataNode, TreeWidget
-from .widgets.new_ipytree import TreeWidget
+from .widgets.new_ipytree import TreeWidget, Folder
 from .widgets.node_detail import NodeDetail
-from .image_utils import fit, scale, pil_2_widget, ImageContainer, scale_coords
-from .style import CSS
+from .widgets.navigation import NavigationToolbar
+from .utils.image_utils import fit, scale, pil_2_widget, ImageContainer, scale_coords
+from .style.style import CSS
 
 class App(ipyw.HBox):
 
     def __init__(self, indir, bulk_render=False):
-        self.ch, self.cw = 1000, 900
-        super().__init__(height=self.ch, width=self.cw)
+        super().__init__()
         self.add_class("main-app")
 
-        self.node_detail = NodeDetail()
-
         self.bulk_render = bulk_render
-        self.file_dd = ipyw.Dropdown(
-            options=[
-                (str(x).replace("\\","/"), x) 
-                for x in Path(indir).rglob("*.pdf")
-                ]
-            )
 
-        self.file_dd.observe(self.new_file, "value")
+        self.node_detail = NodeDetail()
+        self.navigator = NavigationToolbar(indir)
+        self.canvas = PdfCanvas(height=1000)
+        self.tree_visualizer = TreeWidget(Path(indir))
 
-        self.canvas = PdfCanvas(height=self.ch, width=self.cw)
+        self.navigator.file_dd.observe(self.new_file, "value")
+        self.navigator.prev_page_button.on_click(self.prev_page)
+        self.navigator.next_page_button.on_click(self.next_page)
+        self.navigator.save_page_button.on_click(self.save)
+        self.navigator.draw_bboxes_checkbox.observe(self.on_selection_change,"value")
+
         self.canvas.animated_layer.on_mouse_up(self.parse_current_selection)
-
-        self.prev_page_button = ipyw.Button(
-            icon="arrow-left",
-            layout={"width":"50px"}
-        )
-        self.prev_page_button.on_click(self.prev_page)
-
-        self.next_page_button = ipyw.Button(
-            icon="arrow-right",
-            layout={"width":"50px"}
-        )
-        self.next_page_button.on_click(self.next_page)
-
-        self.save_page_button = ipyw.Button(
-            icon="save",
-            layout={"width":"50px"}
-        )
-        self.save_page_button.on_click(self.save)
-
-        self.draw_bboxes_checkbox = ipyw.Checkbox(
-            value=False,
-            description="Show all Boxes",
-            tooltip="Draws bounding boxes over selected section. Also acts as a hyperlink to jump to the start of the selected section."
-        )
-        self.draw_bboxes_checkbox.observe(self.on_selection_change,"value")
-
-
-        self.btns = ipyw.HBox(
-            [
-                self.prev_page_button,
-                self.next_page_button,
-                self.draw_bboxes_checkbox,
-                self.save_page_button,
-            ]
-        )
 
         # Load the first file
         self.new_file()
@@ -78,16 +43,17 @@ class App(ipyw.HBox):
         Render the pdf selected in `file_dd` and load in any JSON file which
         may have been previously generated for it.
         """
-        self.draw_bboxes_checkbox.value = False
+        self.navigator.draw_bboxes_checkbox.value = False
 
-        fname = self.file_dd.value
+        fname = self.navigator.file_dd.value
 
         self.imgs = ImageContainer(fname, bulk_render=self.bulk_render)
         self.n_pages = self.imgs.info["Pages"]
 
-        if Path(fname).with_suffix('.json').exists():
-            with Path(fname).with_suffix('.json').open() as f:
-                self.tree_visualizer = TreeWidget(json.load(f))
+        # if Path(fname).with_suffix('.json').exists():
+        #     with Path(fname).with_suffix('.json').open() as f:
+        #         self.tree_visualizer = TreeWidget(json.load(f))
+
 
         tree_box = ipyw.VBox([self.tree_visualizer])
         tree_box.add_class("doc-tree-outter")
@@ -98,8 +64,7 @@ class App(ipyw.HBox):
             ipyw.VBox(
                 [
                     CSS,
-                    self.file_dd,
-                    self.btns,
+                    self.navigator,
                     self.node_detail,
                 ]
             ),
@@ -116,7 +81,7 @@ class App(ipyw.HBox):
             if not path:
                 return
             node = self.doc_tree[self.tree_visualizer.path_to_selected()]
-        if self.draw_bboxes_checkbox.value:
+        if self.navigator.draw_bboxes_checkbox.value:
             if node.content and not node.content[0]["page"] == self.img_index:
                 self.img_index = node.content[0]["page"]
             self.load()
@@ -151,7 +116,7 @@ class App(ipyw.HBox):
         self.init_canvas()
         self.canvas.add_image(pil_2_widget(img))
 
-        if self.draw_bboxes_checkbox.value:
+        if self.navigator.draw_bboxes_checkbox.value:
             node = self.tree_visualizer.selected().node
             for item in node.content:
                 if item["page"] == self.img_index:
