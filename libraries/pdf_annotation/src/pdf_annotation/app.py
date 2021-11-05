@@ -11,21 +11,29 @@ from .widgets.canvas import PdfCanvas
 from .widgets.new_ipytree import TreeWidget
 from .widgets.node_detail import NodeDetail
 from .widgets.navigation import NavigationToolbar
-from .utils.image_utils import fit, scale, pil_2_widget, ImageContainer, scale_coords
+from .utils.image_utils import (
+    fit,
+    canvas_2_rel,
+    scale,
+    rel_crop,
+    pil_2_widget, 
+    ImageContainer, 
+    scale_coords
+)
 from .style.style import CSS
 
 class App(ipyw.HBox):
 
     def __init__(self, indir, bulk_render=False):
         super().__init__()
-        self.add_class("main-app")
+        self.add_class("eris-main-app")
 
         self.bulk_render = bulk_render
         self.fname = ""
         self.active_node = None
         self.active_node_id = None
 
-        self.navigator = NavigationToolbar(indir)
+        self.navigator = NavigationToolbar()
         self.canvas = PdfCanvas(height=1000)
         self.tree_visualizer = TreeWidget(indir)
         self.node_detail = NodeDetail(self.tree_visualizer.root)
@@ -33,8 +41,8 @@ class App(ipyw.HBox):
         self.tree_visualizer.observe(self.on_selection_change, "selected_nodes")
         self.navigator.prev_page_button.on_click(self.prev_page)
         self.navigator.next_page_button.on_click(self.next_page)
-        self.navigator.save_page_button.on_click(self.save)
-        # self.navigator.draw_bboxes_checkbox.observe(self.on_selection_change,"value")
+        self.navigator.save_button.on_click(self.save)
+        self.navigator.draw_bboxes.observe(self.redraw_boxes, "value")
 
         self.canvas.animated_layer.on_mouse_up(self.parse_current_selection)
 
@@ -49,7 +57,7 @@ class App(ipyw.HBox):
 
 
         tree_box = ipyw.VBox([self.tree_visualizer])
-        tree_box.add_class("doc-tree-outter")
+        tree_box.add_class("eris-doc-tree-outter")
 
         self.children = [
             tree_box,
@@ -89,7 +97,20 @@ class App(ipyw.HBox):
                 self.fname = fname
                 self.img_index = 0 # get index from node
                 self.load()
-                
+
+            self.redraw_boxes()
+
+    def redraw_boxes(self, _=None):
+        self.canvas.clear()
+        if self.navigator.draw_bboxes.value:
+            bboxes = self.active_node.get_boxes(
+                self.img_index, 
+                self.full_img.width*self.scaling_factor, 
+                self.full_img.height*self.scaling_factor, 
+                True
+            )
+            self.canvas.draw_many(bboxes)
+        self.canvas.set_type(self.active_node._type)
 
     def next_page(self, _=None):
         if self.img_index < self.n_pages-1:
@@ -112,33 +133,15 @@ class App(ipyw.HBox):
         img = scale(self.full_img, self.scaling_factor)
         self.canvas.add_image(pil_2_widget(img))
 
-        if self.navigator.draw_bboxes_checkbox.value:
-            node = self.active_node
-            # for item in node.content:
-            #     if item["page"] == self.img_index:
-            #         x1, x2, y1, y2 = item["coords"]
-            #         w,h = self.full_img.width, self.full_img.height
-            #         s = self.scaling_factor
-            #         coords = [int(w*x1*s), int(h*y1*s), int(w*x2*s), int(h*y2*s)]
-            #         # Draw the rect on current canvas
-            #         self.canvas.rect = coords
-                    # self.canvas.draw_rect
-                    # Mimic a mouse_up event
-                    # self.canvas.bboxes.append(coords)
-                    # self.canvas.add_layer()
+
 
     def parse_current_selection(self,x,y):
-        x1,y1,x2,y2 = [int(x/self.scaling_factor) for x in self.canvas.rect]
-        x1, x2 = sorted([x1,x2])
-        y1, y2 = sorted([y1,y2])
-        coords = x1,y1,x2,y2
-        w,h = self.full_img.width, self.full_img.height
-        rel_coords = [x1/w, x2/w, y1/h, y2/h]
-        
-        self.selection_pipe(coords, rel_coords)
+        w = self.scaling_factor * self.full_img.width
+        h = self.scaling_factor * self.full_img.height
+        self.selection_pipe(canvas_2_rel(self.canvas.rect, w, h))
     
 
-    def handle_image(self, coords, rel_coords):
+    def handle_image(self, rel_coords):
         self.active_node.add_content(
             {
                 "value":None,
@@ -148,7 +151,7 @@ class App(ipyw.HBox):
         )
 
 
-    def handle_table(self, coords, rel_coords):
+    def handle_table(self, rel_coords):
         self.active_node.add_content(
             {
                 "value":None,
@@ -158,8 +161,8 @@ class App(ipyw.HBox):
         )
 
 
-    def handle_label(self, coords, rel_coords):
-        text = tess.image_to_string(self.full_img.crop(coords))
+    def handle_label(self, rel_coords):
+        text = tess.image_to_string(rel_crop(self.full_img, rel_coords))
 
         selected_node = self.active_node
         selected_node.name = text.strip()
@@ -171,9 +174,10 @@ class App(ipyw.HBox):
             "coords":rel_coords
         }
         selected_node.content = [item]
+        self.redraw_boxes()
 
-    def handle_textblock(self, coords, rel_coords):
-        text = tess.image_to_string(self.full_img.crop(coords))
+    def handle_textblock(self, rel_coords):
+        text = tess.image_to_string(rel_crop(self.full_img, rel_coords))
         
         item = {
             "value":text,
