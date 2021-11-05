@@ -9,6 +9,7 @@ from ..utils.update_json_data import clean
 from ..utils.image_utils import rel_2_canvas
 
 NODE_TYPES = {}
+NODE_REGISTER = {}
 MAX_LEN = 20
 
 
@@ -92,10 +93,13 @@ class MyNode(Node):
         label="",
         path=None,
         data=None,
+        parent=None,
     ):
         super().__init__()
         self._type = data["type"]
         self.content = data.get("content", [])
+        NODE_REGISTER[self._id] = self
+        self.parent = parent
 
         # Use the path specified in the data dict if it exists.
         # Otherwise, use the parent's path.
@@ -110,11 +114,30 @@ class MyNode(Node):
         if not data is None:
             if isinstance(data["children"], dict):
                 for label, d in data["children"].items():
-                    self.add_node(MyNode(label, self._path, d))
+                    self.add_node(
+                        MyNode(
+                            label=label, 
+                            path=self._path, 
+                            data=d,
+                            parent=self._id,
+                        )
+                    )
             elif isinstance(data["children"], list):
                 for d in data["children"]:
-                    self.add_node(MyNode(d["label"], self._path, d))
+                    self.add_node(
+                        MyNode(
+                            label=d["label"],
+                            path=self._path, 
+                            data=d,
+                            parent=self._id
+                        )
+                    )
 
+    def _delete(self, child):
+        self.remove_node(child)
+
+    def delete(self,_=None):
+        NODE_REGISTER[self.parent]._delete(self)
 
     @observe("label")
     def set_name(self, _):

@@ -26,3 +26,8 @@
 .eris-small-btn {
 	width: 40px;
 }
+.eris-small-btn-red {
+	width: 40px;
+	color: darkred;
+	background-color: white;
+}
