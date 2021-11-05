@@ -8,8 +8,9 @@
 .doc-tree {
 	direction: ltr;
 	overflow: visible;
-	width: fit-content;
-	height: fit-content;
+	padding: 5px;
+	width: 90%;
+	height: 90%;
 }
 .doc-tree-outter {
 	border: 1px solid #ff0000;
