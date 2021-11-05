@@ -112,42 +112,6 @@ class MyNode(Node):
             for n in self.nodes:
                 n.collapse_to(level-1)
 
-<<<<<<< HEAD
-
-class SectionNode(MyNode):
-    __type__ = "section"
-
-    def __init__(self, data=None):
-        super().__init__(data)
-        self.value = data.get("value","")
-        ellipsis = "..." if len(self.value)>MAX_LEN else ""
-        self.name = self.value[:MAX_LEN] + ellipsis
-
-class TextNode(MyNode):
-    __type__ = "text"
-
-    def __init__(self, data=None):
-        super().__init__(data)
-        self.value = data.get("value","")
-        ellipsis = "..." if len(self.value)>MAX_LEN else ""
-        self.name = self.value[:MAX_LEN] + ellipsis
-        self.icon = "align-left"
-
-class ImageNode(MyNode):
-    __type__ = "image"
-
-    def __init__(self, data=None):
-        super().__init__(data)
-        self.value = data.get("value","")
-        self.name = "img"
-        self.icon = "image"
-
-NODE_TYPES = {
-    "section": SectionNode,
-    "text": TextNode,
-    "image": ImageNode,
-}
-=======
     def get_boxes(self, page_num, w, h, include_children=False):
         bboxes = [
             (
@@ -167,4 +131,3 @@ NODE_TYPES = {
 #     "text": TextNode,
 #     "image": ImageNode,
 # }
->>>>>>> working-branch
