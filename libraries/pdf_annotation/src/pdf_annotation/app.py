@@ -7,6 +7,7 @@ import pytesseract as tess
 from traitlets import observe
 
 from .widgets.canvas import PdfCanvas
+
 # from .widgets.tree import DataNode, TreeWidget
 from .widgets.new_ipytree import TreeWidget
 from .widgets.node_detail import NodeDetail
@@ -16,14 +17,14 @@ from .utils.image_utils import (
     canvas_2_rel,
     scale,
     rel_crop,
-    pil_2_widget, 
-    ImageContainer, 
-    scale_coords
+    pil_2_widget,
+    ImageContainer,
+    scale_coords,
 )
 from .style.style import CSS
 
-class App(ipyw.HBox):
 
+class App(ipyw.HBox):
     def __init__(self, indir, bulk_render=False):
         super().__init__()
         self.add_class("eris-main-app")
@@ -55,13 +56,12 @@ class App(ipyw.HBox):
             "section": self.handle_label,
         }
 
-
         tree_box = ipyw.VBox([self.tree_visualizer])
         tree_box.add_class("eris-doc-tree-outter")
 
         self.children = [
             tree_box,
-            self.canvas, 
+            self.canvas,
             ipyw.VBox(
                 [
                     CSS,
@@ -70,8 +70,6 @@ class App(ipyw.HBox):
                 ]
             ),
         ]
-
-
 
     def on_selection_change(self, event):
         """
@@ -86,7 +84,7 @@ class App(ipyw.HBox):
             node = event["new"][0]
 
             self.active_node = node
-            self.selection_pipe = self.SELECTION_PIPES.get(node._type,None)
+            self.selection_pipe = self.SELECTION_PIPES.get(node._type, None)
             fname = node._path
             self.node_detail.set_node(node)
 
@@ -95,7 +93,7 @@ class App(ipyw.HBox):
                 self.n_pages = self.imgs.info["Pages"]
 
                 self.fname = fname
-                self.img_index = 0 # get index from node
+                self.img_index = 0  # get index from node
                 self.load()
 
             self.redraw_boxes()
@@ -104,27 +102,26 @@ class App(ipyw.HBox):
         self.canvas.clear()
         if self.navigator.draw_bboxes.value:
             bboxes = self.active_node.get_boxes(
-                self.img_index, 
-                self.full_img.width*self.scaling_factor, 
-                self.full_img.height*self.scaling_factor, 
-                True
+                self.img_index,
+                self.full_img.width * self.scaling_factor,
+                self.full_img.height * self.scaling_factor,
+                True,
             )
             self.canvas.draw_many(bboxes)
         self.canvas.set_type(self.active_node._type)
 
     def next_page(self, _=None):
-        if self.img_index < self.n_pages-1:
+        if self.img_index < self.n_pages - 1:
             self.canvas.clear()
-            self.img_index +=1
+            self.img_index += 1
             self.load()
 
     def prev_page(self, _=None):
         if self.img_index > 0:
             self.canvas.clear()
-            self.img_index -=1
+            self.img_index -= 1
             self.load()
 
-    
     def load(self):
         self.canvas.clear()
         self.full_img = self.imgs[self.img_index]
@@ -133,33 +130,20 @@ class App(ipyw.HBox):
         img = scale(self.full_img, self.scaling_factor)
         self.canvas.add_image(pil_2_widget(img))
 
-
-
-    def parse_current_selection(self,x,y):
+    def parse_current_selection(self, x, y):
         w = self.scaling_factor * self.full_img.width
         h = self.scaling_factor * self.full_img.height
         self.selection_pipe(canvas_2_rel(self.canvas.rect, w, h))
-    
 
     def handle_image(self, rel_coords):
         self.active_node.add_content(
-            {
-                "value":None,
-                "page": self.img_index,
-                "coords":rel_coords
-            }
+            {"value": None, "page": self.img_index, "coords": rel_coords}
         )
-
 
     def handle_table(self, rel_coords):
         self.active_node.add_content(
-            {
-                "value":None,
-                "page": self.img_index,
-                "coords":rel_coords
-            }
+            {"value": None, "page": self.img_index, "coords": rel_coords}
         )
-
 
     def handle_label(self, rel_coords):
         text = tess.image_to_string(rel_crop(self.full_img, rel_coords))
@@ -168,25 +152,17 @@ class App(ipyw.HBox):
         selected_node.name = text.strip()
 
         # store the coords of the headding for training purposes
-        item = {
-            "value":text.strip(),
-            "page": self.img_index,
-            "coords":rel_coords
-        }
+        item = {"value": text.strip(), "page": self.img_index, "coords": rel_coords}
         selected_node.content = [item]
         self.redraw_boxes()
 
     def handle_textblock(self, rel_coords):
         text = tess.image_to_string(rel_crop(self.full_img, rel_coords))
-        
-        item = {
-            "value":text,
-            "page": self.img_index,
-            "coords":rel_coords
-        }
+
+        item = {"value": text, "page": self.img_index, "coords": rel_coords}
         self.active_node.add_content(item)
 
-    def save(self,_=None):
-        out_path = Path(self.fname).with_suffix('.json')
+    def save(self, _=None):
+        out_path = Path(self.fname).with_suffix(".json")
         with out_path.open(mode="w") as f:
             json.dump(self.doc_tree.to_dict(), f)

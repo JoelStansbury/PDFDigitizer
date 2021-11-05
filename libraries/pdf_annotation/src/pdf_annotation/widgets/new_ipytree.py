@@ -11,7 +11,7 @@ MAX_LEN = 20
 
 
 def truncate(s: str):
-    ellipsis = "..." if len(s)>MAX_LEN else ""
+    ellipsis = "..." if len(s) > MAX_LEN else ""
     return s[:MAX_LEN] + ellipsis
 
 
@@ -30,7 +30,7 @@ NODE_KWARGS = {
     },
     "image": {
         "icon": "image",
-    }
+    },
 }
 
 
@@ -42,7 +42,7 @@ def node_factory(directory):
     for x in path.rglob("*.pdf"):
         cursor = data["children"]
         c_path = path
-        for part in x.parts[len(root_parts):]:
+        for part in x.parts[len(root_parts) :]:
             c_path = c_path / part
             cursor = cursor[part]
 
@@ -66,6 +66,7 @@ def set_node_type(cursor, c_path):
     else:
         cursor["type"] = "folder"
 
+
 class TreeWidget(Tree):
     def __init__(self, directory: str):
         super().__init__(multiple_selection=False)
@@ -77,22 +78,20 @@ class TreeWidget(Tree):
 
 class MyNode(Node):
     content = List(default_value=[]).tag(sync=True)
+
     def __init__(
         self,
         label: str,
-        data = None,
+        data=None,
     ):
         super().__init__()
         self._type = data["type"]
         self._path = data["path"]
         self.label = label
-        # self.content = []
-
 
         # Visual aspects of the node
         self.name = truncate(self.label)
         self.icon = NODE_KWARGS[self._type]["icon"]
-
 
         if not data is None:
             for label, d in data["children"].items():
@@ -100,7 +99,6 @@ class MyNode(Node):
 
     def add_content(self, item):
         self.content = self.content + [item]
-
 
     def collapse_to(self, level):
         if level == 0:
@@ -110,24 +108,16 @@ class MyNode(Node):
         else:
             self.opened = True
             for n in self.nodes:
-                n.collapse_to(level-1)
+                n.collapse_to(level - 1)
 
     def get_boxes(self, page_num, w, h, include_children=False):
         bboxes = [
-            (
-                rel_2_canvas(c["coords"], w, h), 
-                self._type
-            ) 
-            for c in self.content if c["page"] == page_num
+            (rel_2_canvas(c["coords"], w, h), self._type)
+            for c in self.content
+            if c["page"] == page_num
         ]
 
         if include_children:
             for child in self.nodes:
                 bboxes += child.get_boxes(page_num, w, h, include_children)
         return bboxes
-
-# NODE_TYPES = {
-#     "section": SectionNode,
-#     "text": TextNode,
-#     "image": ImageNode,
-# }

@@ -1,4 +1,3 @@
-
 from ipywidgets import HBox, Button, Checkbox
 
 
@@ -10,7 +9,6 @@ class NavigationToolbar(HBox):
         self.next_page_button = Button(icon="arrow-right")
         self.next_page_button.add_class("eris-small-btn")
         self.draw_bboxes = Checkbox(description="Show Boxes", value=True)
-        # self.draw_bboxes.add_class("eris-small-btn")
         self.save_button = Button(icon="save")
         self.save_button.add_class("eris-small-btn")
         self.children = [
