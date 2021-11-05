@@ -1,3 +1,5 @@
+import json
+
 from ipytree import Node, Tree
 from collections import defaultdict
 from pathlib import Path
@@ -18,18 +20,23 @@ def truncate(s: str):
 NODE_KWARGS = {
     "folder": {
         "icon": "folder",
+        "make_dict": False,
     },
     "pdf": {
         "icon": "file-pdf",
+        "make_dict": True,
     },
     "section": {
         "icon": "indent",
+        "make_dict": False,
     },
     "text": {
         "icon": "align-left",
+        "make_dict": False,
     },
     "image": {
         "icon": "image",
+        "make_dict": False,
     },
 }
 
@@ -53,7 +60,7 @@ def node_factory(directory):
 
     data["type"] = "folder"
     data["path"] = path
-    return MyNode(directory, data)
+    return MyNode(label=directory, data=data)
 
 
 def set_node_type(cursor, c_path):
@@ -78,15 +85,22 @@ class TreeWidget(Tree):
 
 class MyNode(Node):
     content = List(default_value=[]).tag(sync=True)
+    label = Unicode(default_value="").tag(sync=True)
 
     def __init__(
         self,
-        label: str,
+        label="",
+        path=None,
         data=None,
     ):
         super().__init__()
         self._type = data["type"]
-        self._path = data["path"]
+        self.content = data.get("content", [])
+
+        # Use the path specified in the data dict if it exists.
+        # Otherwise, use the parent's path.
+        self._path = data["path"] if "path" in data else path
+
         self.label = label
 
         # Visual aspects of the node
@@ -94,8 +108,17 @@ class MyNode(Node):
         self.icon = NODE_KWARGS[self._type]["icon"]
 
         if not data is None:
-            for label, d in data["children"].items():
-                self.add_node(MyNode(label, d))
+            if isinstance(data["children"], dict):
+                for label, d in data["children"].items():
+                    self.add_node(MyNode(label, self._path, d))
+            elif isinstance(data["children"], list):
+                for d in data["children"]:
+                    self.add_node(MyNode(d["label"], self._path, d))
+
+
+    @observe("label")
+    def set_name(self, _):
+        self.name = truncate(self.label)
 
     def add_content(self, item):
         self.content = self.content + [item]
@@ -121,3 +144,20 @@ class MyNode(Node):
             for child in self.nodes:
                 bboxes += child.get_boxes(page_num, w, h, include_children)
         return bboxes
+
+    def _to_dict(self):
+        return {
+            "label":self.label,
+            "content":self.content,
+            "type":self._type,
+            "children":[c._to_dict() for c in self.nodes]
+        }
+
+    def to_dict(self):
+        if NODE_KWARGS[self._type]["make_dict"]:
+            return {self._path: [c._to_dict() for c in self.nodes]}
+        else:
+            files = {}
+            for c in self.nodes:
+                files.update(c.to_dict())
+            return files

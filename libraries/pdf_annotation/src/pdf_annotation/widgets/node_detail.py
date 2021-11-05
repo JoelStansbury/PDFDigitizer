@@ -42,8 +42,7 @@ class NodeDetail(Tab):
 class MyTab(HBox):
     def add_node(self, btn):
         new_node = MyNode(
-            "",  # Default Label
-            {"type": self._types[btn], "path": self.node._path, "children": {}},
+            data={"type": self._types[btn], "path": self.node._path, "children": {}},
         )
         self.node.add_node(new_node)
         new_node.selected = True

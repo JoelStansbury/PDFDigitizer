@@ -8,7 +8,6 @@ from traitlets import observe
 
 from .widgets.canvas import PdfCanvas
 
-# from .widgets.tree import DataNode, TreeWidget
 from .widgets.new_ipytree import TreeWidget
 from .widgets.node_detail import NodeDetail
 from .widgets.navigation import NavigationToolbar
@@ -48,7 +47,6 @@ class App(ipyw.HBox):
         self.canvas.animated_layer.on_mouse_up(self.parse_current_selection)
 
         # Load the first file
-        # self.new_file()
         self.SELECTION_PIPES = {
             "text": self.handle_textblock,
             "image": self.handle_image,
@@ -79,7 +77,6 @@ class App(ipyw.HBox):
         # Selecting a new node causes two events, one for deselecting the old
         # one and another for selecting the new one. We are concerned with the
         # new node so we ignore the first event by asserting that new is not None.
-        # print(event["new"])
         if event["new"]:
             node = event["new"][0]
 
@@ -93,10 +90,10 @@ class App(ipyw.HBox):
                 self.n_pages = self.imgs.info["Pages"]
 
                 self.fname = fname
-                self.img_index = 0  # get index from node
+                self.img_index = node.content[0]["page"] if node.content else 0
                 self.load()
-
-            self.redraw_boxes()
+            else:
+                self.redraw_boxes()
 
     def redraw_boxes(self, _=None):
         self.canvas.clear()
@@ -129,6 +126,7 @@ class App(ipyw.HBox):
 
         img = scale(self.full_img, self.scaling_factor)
         self.canvas.add_image(pil_2_widget(img))
+        self.redraw_boxes()
 
     def parse_current_selection(self, x, y):
         w = self.scaling_factor * self.full_img.width
@@ -149,7 +147,7 @@ class App(ipyw.HBox):
         text = tess.image_to_string(rel_crop(self.full_img, rel_coords))
 
         selected_node = self.active_node
-        selected_node.name = text.strip()
+        selected_node.label = text.strip()
 
         # store the coords of the headding for training purposes
         item = {"value": text.strip(), "page": self.img_index, "coords": rel_coords}
@@ -163,6 +161,7 @@ class App(ipyw.HBox):
         self.active_node.add_content(item)
 
     def save(self, _=None):
-        out_path = Path(self.fname).with_suffix(".json")
-        with out_path.open(mode="w") as f:
-            json.dump(self.doc_tree.to_dict(), f)
+        for path, data in self.tree_visualizer.root.to_dict().items():
+            if data:
+                with path.with_suffix(".json").open(mode="w") as f:
+                    json.dump(data, f)
