@@ -32,6 +32,8 @@ class App(ipyw.HBox):
         self.fname = ""
         self.active_node = None
         self.active_node_id = None
+        self.last_image = None
+        self.full_img = None
 
         self.navigator = NavigationToolbar()
         self.canvas = PdfCanvas(height=1000)
@@ -88,12 +90,11 @@ class App(ipyw.HBox):
             if not fname == self.fname and fname.suffix == ".pdf":
                 self.imgs = ImageContainer(fname, bulk_render=self.bulk_render)
                 self.n_pages = self.imgs.info["Pages"]
-
                 self.fname = fname
-                self.img_index = node.content[0]["page"] if node.content else 0
-                self.load()
-            else:
-                self.redraw_boxes()
+            # else:
+            #     self.redraw_boxes()
+            self.img_index = node.content[0]["page"] if node.content else 0
+            self.load()
 
     def redraw_boxes(self, _=None):
         self.canvas.clear()
@@ -120,12 +121,14 @@ class App(ipyw.HBox):
             self.load()
 
     def load(self):
-        self.canvas.clear()
-        self.full_img = self.imgs[self.img_index]
-        self.scaling_factor = fit(self.full_img, self.canvas.width, self.canvas.height)
+        if (self.fname, self.img_index) != self.last_image:
+            self.canvas.clear()
+            self.full_img = self.imgs[self.img_index]
+            self.scaling_factor = fit(self.full_img, self.canvas.width, self.canvas.height)
 
-        img = scale(self.full_img, self.scaling_factor)
-        self.canvas.add_image(pil_2_widget(img))
+            img = scale(self.full_img, self.scaling_factor)
+            self.canvas.add_image(pil_2_widget(img))
+            self.last_image = (self.fname, self.img_index)
         self.redraw_boxes()
 
     def parse_current_selection(self, x, y):

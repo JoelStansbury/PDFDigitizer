@@ -24,14 +24,14 @@ class NodeDetail(Tab):
             SubsectionTools(node),
             ImageTools(node),
             TextBlockTools(node),
-            NlpUtils(node),
+            TextInsights(node),
         ]
         self.titles = [
             "Info",
             "Subsection Tools",
             "Image Tools",
             "Text Block Tools",
-            "NLP Utilities",
+            "Insights",
         ]
 
         self.set_title(0, "Info")
@@ -148,7 +148,7 @@ class TextBlockTools(MyTab):
         self.redraw_content()
 
 
-class NlpUtils(MyTab):
+class TextInsights(MyTab):
     def __init__(self, node):
         super().__init__()
         self.node = node
@@ -159,7 +159,7 @@ class NlpUtils(MyTab):
         self.children = [
             VBox(
                 [
-                    self.refresh_btn,
+                    # self.refresh_btn,
                     HBox(
                         [
                             Label("Entities: "),
@@ -170,7 +170,11 @@ class NlpUtils(MyTab):
             )
         ]
 
-    def refresh(self, _):
+    def refresh(self, _=None):
         self.ents.value = "<br>".join(
             set([str(x) for x in nlp("".join([x["value"] for x in self.node.content])).ents])
         )
+
+    def set_node(self, node):
+        super().set_node(node)
+        self.refresh()
