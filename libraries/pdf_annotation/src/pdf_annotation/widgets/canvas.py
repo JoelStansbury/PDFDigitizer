@@ -1,10 +1,17 @@
 from ipycanvas import Canvas, MultiCanvas
 
+CANVAS_TYPE_KWARGS = {
+    "section": {"color": "blue"},
+    "text": {"color": "black"},
+    "image": {"color": "red"},
+    "pdf": {"color": "black"},  # Unused
+    "folder": {"color": "black"},  # Unused
+}
 class PdfCanvas(MultiCanvas):
 
     def __init__(self, **kwargs):
         super().__init__(3, **kwargs)
-        self.add_class("pdf-canvas")
+        self.add_class("eris-pdf-canvas")
 
         self.bboxes = []
 
@@ -26,12 +33,12 @@ class PdfCanvas(MultiCanvas):
         """
         self._canvases = [self.bg_layer, self.fixed_layer, self.animated_layer]
 
-    def xywh(self):
+    def xywh(self, coords=None):
         '''
-        ipycanvas requires xywh coords, but ipyevents (and PIL) uses xyxy, 
+        ipycanvas requires xywh coords, but ipyevents (and PIL) uses xyxy,
         so conversion is needed to draw the box on the canvas.
         '''
-        x1,y1,x2,y2 = self.rect
+        x1,y1,x2,y2 = self.rect if not coords else coords
         x = min(x1,x2)
         y = min(y1, y2)
         w = abs(x2-x1)
@@ -41,7 +48,7 @@ class PdfCanvas(MultiCanvas):
     def draw_rect(self):
         self.animated_layer.clear_rect(0,0,self.width, self.height)
         self.animated_layer.stroke_rect(*self.xywh())
-        self.add_class("pdf-canvas")
+        self.add_class("eris-pdf-canvas")
 
     def clear(self):
         self.fixed_layer.clear_rect(0,0,self.width, self.height)
@@ -68,3 +75,14 @@ class PdfCanvas(MultiCanvas):
         self.bg_layer.draw_image(img)
         self.update()
 
+    def draw_many(self, rects):
+        self.clear()
+        for coords, _type in rects:
+            self.fixed_layer.stroke_style = CANVAS_TYPE_KWARGS[_type]["color"]
+            self.fixed_layer.stroke_rect(*self.xywh(coords))
+        self.update()
+
+    def set_type(self, _type: str):
+        self._type = _type
+        self.fixed_layer.stroke_style = CANVAS_TYPE_KWARGS[_type]["color"]
+        self.animated_layer.stroke_style = CANVAS_TYPE_KWARGS[_type]["color"]
