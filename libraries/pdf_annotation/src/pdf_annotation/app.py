@@ -103,15 +103,13 @@ class App(ipyw.HBox):
             self.img_index -=1
             self.load()
 
-    def init_canvas(self):
-        self.canvas._canvases = self.canvas._canvases[:2]
     
     def load(self):
+        self.canvas.clear()
         self.full_img = self.imgs[self.img_index]
         self.scaling_factor = fit(self.full_img, self.canvas.width, self.canvas.height)
 
         img = scale(self.full_img, self.scaling_factor)
-        self.init_canvas()
         self.canvas.add_image(pil_2_widget(img))
 
         if self.navigator.draw_bboxes_checkbox.value:
@@ -172,7 +170,7 @@ class App(ipyw.HBox):
             "page": self.img_index,
             "coords":rel_coords
         }
-        selected_node.add_content(item)
+        selected_node.content = [item]
 
     def handle_textblock(self, coords, rel_coords):
         text = tess.image_to_string(self.full_img.crop(coords))
