@@ -92,7 +92,11 @@ class App(ipyw.HBox):
                     self.imgs = ImageContainer(fname, bulk_render=self.bulk_render)
                     self.n_pages = self.imgs.info["Pages"]
                     self.fname = fname
-                self.img_index = node.content[0]["page"] if node.content else 0
+                if self.navigator.draw_bboxes.value:
+                    if node.content:
+                        self.img_index = node.content[0]["page"]
+                    if node._type == "pdf":
+                        self.img_index = 0
                 self.load()
             else:
                 self.canvas.clear()

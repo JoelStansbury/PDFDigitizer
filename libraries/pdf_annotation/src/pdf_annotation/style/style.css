@@ -1,9 +1,9 @@
 .eris-main-app {
-	border: 1px solid #00ff55;
+	/* border: 1px solid #00ff55; */
 	height: 1000px;
 }
 .eris-pdf-canvas {
-	border: 1px solid #bdbdbd;
+	border: 1px solid #000000;
 }
 .eris-doc-tree {
 	direction: ltr;
@@ -13,7 +13,7 @@
 	height: 90%;
 }
 .eris-doc-tree-outter {
-	border: 1px solid #ff0000;
+	/* border: 1px solid #ff0000; */
 	width: 300px;
 	height: 100%;
 	overflow: scroll;
@@ -21,7 +21,8 @@
 	align-items: center;
 }
 .eris-node-control-box {
-	border: 1px solid #004cff;
+	
+	border: 1px solid #000000;
 }
 .eris-small-btn {
 	width: 40px;
