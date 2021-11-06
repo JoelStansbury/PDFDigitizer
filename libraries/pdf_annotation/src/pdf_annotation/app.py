@@ -87,14 +87,18 @@ class App(ipyw.HBox):
             fname = node._path
             self.node_detail.set_node(node)
 
-            if not fname == self.fname and fname.suffix == ".pdf":
-                self.imgs = ImageContainer(fname, bulk_render=self.bulk_render)
-                self.n_pages = self.imgs.info["Pages"]
+            if fname.suffix == ".pdf":
+                if fname != self.fname:
+                    self.imgs = ImageContainer(fname, bulk_render=self.bulk_render)
+                    self.n_pages = self.imgs.info["Pages"]
+                    self.fname = fname
+                self.img_index = node.content[0]["page"] if node.content else 0
+                self.load()
+            else:
+                self.canvas.clear()
+                self.canvas.bg_layer.clear()
                 self.fname = fname
-            # else:
-            #     self.redraw_boxes()
-            self.img_index = node.content[0]["page"] if node.content else 0
-            self.load()
+                self.last_image=None
 
     def redraw_boxes(self, _=None):
         self.canvas.clear()

@@ -184,3 +184,9 @@ class MyNode(Node):
             for c in self.nodes:
                 files.update(c.to_dict())
             return files
+
+    def dfs(self):
+        """Iterate through all nodes (self included) using depth first search"""
+        yield self
+        for node in self.nodes:
+            yield from node.dfs()

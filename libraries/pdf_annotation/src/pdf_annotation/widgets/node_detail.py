@@ -8,8 +8,8 @@ nlp = spacy.load("en_core_web_lg")
 
 NODE_KWARGS = {
     "folder": [0],
-    "pdf": [1],
-    "section": [1],
+    "pdf": [1,5],
+    "section": [1,5],
     "text": [3, 4],
     "image": [2],
 }
@@ -25,12 +25,14 @@ class NodeDetail(Tab):
             ImageTools(node),
             TextBlockTools(node),
             TextInsights(node),
+            SectionInsights(node),
         ]
         self.titles = [
             "Info",
             "Subsection Tools",
             "Image Tools",
             "Text Block Tools",
+            "Insights",
             "Insights",
         ]
 
@@ -52,6 +54,8 @@ class NodeDetail(Tab):
 class MyTab(HBox):
     def __init__(self):
         super().__init__()
+        # TODO: when I made this init I thought this would only be run once, 
+        # that is not the case. Refactor this to only run once.
         self.delete_btn = Button(
             icon="trash",
             tooltip="Delete this node and all of its children",
@@ -152,14 +156,10 @@ class TextInsights(MyTab):
     def __init__(self, node):
         super().__init__()
         self.node = node
-        self.refresh_btn = Button(icon="refresh")
-        self.refresh_btn.add_class("eris-small-btn")
-        self.refresh_btn.on_click(self.refresh)
         self.ents = HTML()
         self.children = [
             VBox(
                 [
-                    # self.refresh_btn,
                     HBox(
                         [
                             Label("Entities: "),
@@ -178,3 +178,40 @@ class TextInsights(MyTab):
     def set_node(self, node):
         super().set_node(node)
         self.refresh()
+
+from collections import defaultdict
+class SectionInsights(MyTab):
+    def __init__(self, node):
+        super().__init__()
+        self.node = node
+        self.refresh_btn = Button(icon="refresh")
+        self.refresh_btn.add_class("eris-small-btn")
+        self.refresh_btn.on_click(self.refresh)
+        self.ents = HTML()
+        self.children = [
+            VBox(
+                [
+                    # self.refresh_btn,
+                    HBox(
+                        [
+                            Label("Entities: "),
+                            self.ents,
+                        ]
+                    ),
+                ]
+            )
+        ]
+    def refresh(self, _=None):
+        dd = defaultdict(int)
+        for node in self.node.dfs():
+            if node._type == "text":
+                for ent in nlp(" ".join([x["value"].strip() for x in node.content])).ents:
+                    dd[str(ent).strip().lower()]+=1
+        results = sorted(list(dd.items()), key=lambda x: x[1], reverse=True)[:5]
+        view = "".join([f"<tr><td>{x[0]}</td><td>{x[1]}</td></tr>" for x in results])
+        self.ents.value = f"<table>{view}<tr><td>...</td></tr></table>"
+
+    def set_node(self, node):
+        super().set_node(node)
+        self.refresh()
+
