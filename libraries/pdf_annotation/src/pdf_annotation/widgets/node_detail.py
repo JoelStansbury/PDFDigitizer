@@ -1,15 +1,20 @@
 from ipywidgets import Tab, HTML, VBox, Button, HBox, Textarea, Label
 from traitlets import Unicode, Instance, observe, link, List
-from .new_ipytree import MyNode
+from .new_ipytree import MyNode, NODE_REGISTER
+from collections import defaultdict
 import spacy
+import matplotlib.colors as mcolors
+from random import shuffle
+
+from ..utils.nlp import tfidf_similarity
 
 nlp = spacy.load("en_core_web_lg")
 
 
 NODE_KWARGS = {
-    "folder": [0],
-    "pdf": [1,5],
-    "section": [1,5],
+    "folder": [0,6],
+    "pdf": [1,5,6],
+    "section": [1,5,6],
     "text": [3, 4],
     "image": [2],
 }
@@ -26,6 +31,7 @@ class NodeDetail(Tab):
             TextBlockTools(node),
             TextInsights(node),
             SectionInsights(node),
+            Cytoscape(node),
         ]
         self.titles = [
             "Info",
@@ -34,6 +40,7 @@ class NodeDetail(Tab):
             "Text Block Tools",
             "Insights",
             "Insights",
+            "Cytoscape"
         ]
 
         self.set_title(0, "Info")
@@ -179,7 +186,7 @@ class TextInsights(MyTab):
         super().set_node(node)
         self.refresh()
 
-from collections import defaultdict
+
 class SectionInsights(MyTab):
     def __init__(self, node):
         super().__init__()
@@ -191,7 +198,7 @@ class SectionInsights(MyTab):
         self.children = [
             VBox(
                 [
-                    # self.refresh_btn,
+                    self.refresh_btn,
                     HBox(
                         [
                             Label("Entities: "),
@@ -211,7 +218,110 @@ class SectionInsights(MyTab):
         view = "".join([f"<tr><td>{x[0]}</td><td>{x[1]}</td></tr>" for x in results])
         self.ents.value = f"<table>{view}<tr><td>...</td></tr></table>"
 
-    def set_node(self, node):
-        super().set_node(node)
-        self.refresh()
 
+from ipycytoscape import CytoscapeWidget
+
+class Cytoscape(MyTab):
+    def __init__(self, node):
+        super().__init__()
+        self.node = node
+        self.refresh_btn = Button(icon="refresh")
+        self.refresh_btn.add_class("eris-small-btn")
+        self.refresh_btn.on_click(self.refresh)
+        self.children = [
+            VBox(
+                [
+                    self.refresh_btn,
+                    HTML("Hit refresh to generate cytoscape")
+                ]
+            )
+        ]
+    def on_node_click(self, event):
+        NODE_REGISTER[event["data"]["id"]].selected=True
+
+    def refresh(self, _=None):
+        
+        self.children = [
+            VBox(
+                [
+                    self.refresh_btn,
+                    HTML("loading...")
+                ]
+            )
+        ]
+        
+        docs = {
+            node: node.stringify()
+            for node in self.node.dfs()
+        }
+        for doc, v in list(docs.items()):
+            if v == '' or doc.label=="":
+                docs.pop(doc)
+        
+        # print(len(docs))
+        sim = tfidf_similarity(docs)
+
+        colors = list(mcolors.cnames)  #[x.split(":")[1] for x in mcolors.TABLEAU_COLORS]
+        shuffle(colors)
+
+        files = set([x._path for x in sim])
+        cmap = {k: colors[i] for i,k in enumerate(files)}
+
+        g_edges = []
+        pairs = set()
+        nodes_with_edges = set()
+        for source, edges in sim.items():
+            for edge in edges:
+                target, weight = edge
+                if weight>0.35 and source._id!=target._id:
+                    pair = tuple(sorted([source._id, target._id]))
+                    if not pair in pairs:
+                        nodes_with_edges.add(source)
+                        nodes_with_edges.add(target)
+                        g_edges.append({"data":{"source":source._id, 'target':target._id}})
+                        pairs.add(pair)
+        graph_dict = {
+            "nodes":[
+                {"data":{"id":node._id, "color":cmap[node._path], "name":node.label}} 
+                for node in nodes_with_edges
+            ],
+            "edges":g_edges
+        }
+        
+
+        cyto = CytoscapeWidget()
+        cyto.graph.add_graph_from_json(graph_dict)
+        cyto.on("node","click", self.on_node_click)
+        
+
+        self.children = [
+            VBox(
+                [
+                    self.refresh_btn,
+                    cyto
+                ]
+            )
+        ]
+
+
+        cyto.set_style([{
+            'selector': 'node',
+            'css': {
+                'content': 'data(name)',
+                'text-valign': 'center',
+                'color': 'white',
+                'text-outline-width': 2,
+                'text-outline-color': 'black',
+                'background-color': 'data(color)'
+            }
+            },
+            {
+            'selector': ':selected',
+            'css': {
+                'background-color': 'data(color)',
+                'line-color': 'black',
+                'target-arrow-color': 'black',
+                'source-arrow-color': 'black',
+                'text-outline-color': 'black'
+            }}
+            ])

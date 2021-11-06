@@ -22,22 +22,27 @@ NODE_KWARGS = {
     "folder": {
         "icon": "folder",
         "make_dict": False,
+        "is_text": False,  # can all content be treated as text
     },
     "pdf": {
         "icon": "file-pdf",
         "make_dict": True,
+        "is_text": False,
     },
     "section": {
         "icon": "indent",
         "make_dict": False,
+        "is_text": False,
     },
     "text": {
         "icon": "align-left",
         "make_dict": False,
+        "is_text": True,
     },
     "image": {
         "icon": "image",
         "make_dict": False,
+        "is_text": False,
     },
 }
 
@@ -190,3 +195,15 @@ class MyNode(Node):
         yield self
         for node in self.nodes:
             yield from node.dfs()
+
+    def stringify(self):
+        """
+        Recursively construct a monolithic string containing all text
+        within this node and all sub-nodes
+        """
+        if self._type == "text":
+            return " ".join([x["value"] for x in self.content])
+        content = []
+        for c in self.nodes:
+            content.append(c.stringify())
+        return " ".join(content)
