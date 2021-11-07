@@ -27,3 +27,26 @@ pip install -e pdf_annotation
 
 Selecting a node in the graph will highlight the node in the `DocTree`. Clicking the node in the `DocTree` will render the first page of the node.
 ![image](https://user-images.githubusercontent.com/48299585/140627583-0afea862-0b85-438c-b8b0-b6361f18d8e3.png)
+
+### Digitizing Utilities
+> I recommend turning off `Draw BBoxes` as this changes pages every time you add a node
+Each node has a specific set of tools available to use. Here are the tools provided when a `Section` node is selected.
+Starting from the left:
+ * `Add Section Node` adds a sub-node of type `Section` and selects it
+ * `Add Text Node` adds a sub-node of type `Text` and selects it
+ * `Add Image Node` ...
+ * `Delete Node` Delete the selected node and all of its children
+
+![image](https://user-images.githubusercontent.com/48299585/140627713-2b761376-cf6b-4745-acbf-332ac28c782b.png)
+
+### Content Selector
+Content is extracted from the rendered image. Text is extracted using Optical Character Recognition (OCR). Images don't do any image analysis, they just denote coordinates and page number so that they can be retreived later if need be.
+
+When a `Section` node is selected, the selection tool will attempt to parse text from the portion of the page selected by the user. This text will __overwrite__ the label assigned to the node.
+
+When a `Text` node is selected, the selection tool will attempt to parse text from the selected area and __append__ it to the node's content. This is because text blocks are not always perfectly rectangular, and often span multiple pages.
+
+When an `Image` node is selected, the coordinates of the box are appended to the node's content.
+
+### Save Button
+This will generate `json` files for each document in the directory with instruction for regenerating any nodes you have created when you open the tool again. Alternatively, you can just load the json into another script to extract the document structure if all you want is the text and the hierarchy.
