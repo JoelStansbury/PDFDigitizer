@@ -32,7 +32,7 @@ Selecting a node in the graph will highlight the node in the `DocTree`. Clicking
 ![image](https://user-images.githubusercontent.com/48299585/140627583-0afea862-0b85-438c-b8b0-b6361f18d8e3.png)
 
 ### Digitizing Utilities
-> I recommend turning off `Draw BBoxes` as this changes pages every time you add a node
+> I recommend turning off `Show Boxes` as this changes pages every time you add a node (working on a better solution)
 
 Each node has a specific set of tools available to use. Here are the tools provided when a `Section` node is selected.
 Starting from the left:
