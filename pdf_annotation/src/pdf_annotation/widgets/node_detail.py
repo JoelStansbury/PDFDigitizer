@@ -1,21 +1,29 @@
-from ipywidgets import Tab, HTML, VBox, Button, HBox, Textarea, Label
+from ipywidgets import Tab, HTML, VBox, Button, HBox, Textarea, Output
+from IPython.display import display
+from spacy.tokens import token
 from traitlets import Unicode, Instance, observe, link, List
 from .new_ipytree import MyNode, NODE_REGISTER
 from collections import defaultdict
 # import spacy
 import matplotlib.colors as mcolors
 from random import shuffle
+import pandas as pd
 
 from ..utils.nlp import tfidf_similarity
+from .dataframe_widget import DataFrame
 
-# nlp = spacy.load("en_core_web_lg")
+try:
+    import spacy
+    nlp = spacy.load("en_core_web_lg")
+except:
+    nlp = None
 
 
 NODE_KWARGS = {
-    "folder": [0,4],
-    "pdf": [1,4],
-    "section": [1,4],
-    "text": [3],
+    "folder": [0,5],
+    "pdf": [1,5],
+    "section": [1,5],
+    "text": [3,4],
     "image": [2],
 }
 
@@ -29,7 +37,7 @@ class NodeDetail(Tab):
             SubsectionTools(node),
             ImageTools(node),
             TextBlockTools(node),
-            # TextInsights(node),
+            SpacyInsights(node),
             # SectionInsights(node),
             Cytoscape(node),
         ]
@@ -38,7 +46,7 @@ class NodeDetail(Tab):
             "Subsection Tools",
             "Image Tools",
             "Text Block Tools",
-            # "Insights",
+            "Spacy",
             # "Insights",
             "Cytoscape"
         ]
@@ -159,33 +167,46 @@ class TextBlockTools(MyTab):
         self.redraw_content()
 
 # Requires Spacy model
-# class TextInsights(MyTab):
-#     def __init__(self, node):
-#         super().__init__()
-#         self.node = node
-#         self.ents = HTML()
-#         self.children = [
-#             VBox(
-#                 [
-#                     HBox(
-#                         [
-#                             Label("Entities: "),
-#                             self.ents,
-#                         ]
-#                     ),
-#                 ]
-#             )
-#         ]
+class SpacyInsights(MyTab):
+    def __init__(self, node):
+        super().__init__()
 
-#     def refresh(self, _=None):
-#         self.ents.value = "<br>".join(
-#             set([str(x) for x in nlp("".join([x["value"] for x in self.node.content])).ents])
-#         )
+        self.refresh_btn = Button(icon="refresh")
+        self.refresh_btn.add_class("eris-small-btn")
+        self.refresh_btn.on_click(self.refresh)
 
-#     def set_node(self, node):
-#         super().set_node(node)
-#         self.refresh()
+        self.utils = HBox(
+            [
+                self.refresh_btn
+            ]
+        )
+        if nlp is None:
+            self.utils = HTML("Spacy model not found. Do 'pip install spacy && python -m spacy download en_core_web_lg'")
+        self.children = [self.utils]
 
+    def refresh(self, _=None):
+        doc = nlp(self.node.stringify())
+        ents = '<strong>Entities: </strong>"'+ ('", "'.join([str(x) for x in doc.ents])) + '"'
+        token_df = pd.DataFrame([
+            {
+                "TEXT": token.text,
+                "LEMMA": token.lemma_,
+                "POS": token.pos_,
+                "TAG": token.tag_,
+                "DEP": token.dep_,
+            } for token in doc
+        ])
+        
+        # df_out = Output()
+        # with df_out:
+        #     display(token_df)
+        self.children = [
+            VBox([
+                self.utils,
+                HTML(ents),
+                DataFrame(token_df)
+            ])
+        ]
 
 # class SectionInsights(MyTab):
 #     def __init__(self, node):
@@ -225,7 +246,10 @@ class Cytoscape(MyTab):
     def __init__(self, node):
         super().__init__()
         self.node = node
-        self.refresh_btn = Button(icon="refresh")
+        self.refresh_btn = Button(
+            icon="refresh",
+            tooltip="Recompute network"
+        )
         self.refresh_btn.add_class("eris-small-btn")
         self.refresh_btn.on_click(self.refresh)
         self.children = [
@@ -258,8 +282,19 @@ class Cytoscape(MyTab):
             if v == '' or doc.label=="":
                 docs.pop(doc)
         
-        # print(len(docs))
+
+
         sim = tfidf_similarity(docs)
+        if len(sim) == 0:
+            self.children = [
+                VBox(
+                    [
+                        self.refresh_btn,
+                        HTML("Not enough nodes")
+                    ]
+                )
+            ]
+            return
 
         colors = list(mcolors.cnames)  #[x.split(":")[1] for x in mcolors.TABLEAU_COLORS]
         shuffle(colors)

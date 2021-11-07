@@ -48,7 +48,6 @@ def normalize(sent):
 
 
 def tfidf_similarity(docs: dict):
-    print("running similarity function")
     n_docs = {k: normalize(v) for k, v in docs.items()}
 
     for k,v in list(n_docs.items()):
@@ -96,7 +95,8 @@ def tfidf_similarity(docs: dict):
         for word, weight in doc_tfidf.items():
             v += some_hot(word, weight)
         return v
-    print(len(tfidf))
+    if len(tfidf) == 0:
+        return {}
     doc_vectors = {k: encode_doc(v) for k, v in tfidf.items()}
     doc_keys, X = zip(*doc_vectors.items())
     X = array(X)
