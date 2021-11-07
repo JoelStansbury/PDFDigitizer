@@ -2,20 +2,20 @@ from ipywidgets import Tab, HTML, VBox, Button, HBox, Textarea, Label
 from traitlets import Unicode, Instance, observe, link, List
 from .new_ipytree import MyNode, NODE_REGISTER
 from collections import defaultdict
-import spacy
+# import spacy
 import matplotlib.colors as mcolors
 from random import shuffle
 
 from ..utils.nlp import tfidf_similarity
 
-nlp = spacy.load("en_core_web_lg")
+# nlp = spacy.load("en_core_web_lg")
 
 
 NODE_KWARGS = {
-    "folder": [0,6],
-    "pdf": [1,5,6],
-    "section": [1,5,6],
-    "text": [3, 4],
+    "folder": [0,4],
+    "pdf": [1,4],
+    "section": [1,4],
+    "text": [3],
     "image": [2],
 }
 
@@ -29,8 +29,8 @@ class NodeDetail(Tab):
             SubsectionTools(node),
             ImageTools(node),
             TextBlockTools(node),
-            TextInsights(node),
-            SectionInsights(node),
+            # TextInsights(node),
+            # SectionInsights(node),
             Cytoscape(node),
         ]
         self.titles = [
@@ -38,8 +38,8 @@ class NodeDetail(Tab):
             "Subsection Tools",
             "Image Tools",
             "Text Block Tools",
-            "Insights",
-            "Insights",
+            # "Insights",
+            # "Insights",
             "Cytoscape"
         ]
 
@@ -158,65 +158,65 @@ class TextBlockTools(MyTab):
         self.link = link((self.node, "content"), (self, "content"))
         self.redraw_content()
 
+# Requires Spacy model
+# class TextInsights(MyTab):
+#     def __init__(self, node):
+#         super().__init__()
+#         self.node = node
+#         self.ents = HTML()
+#         self.children = [
+#             VBox(
+#                 [
+#                     HBox(
+#                         [
+#                             Label("Entities: "),
+#                             self.ents,
+#                         ]
+#                     ),
+#                 ]
+#             )
+#         ]
 
-class TextInsights(MyTab):
-    def __init__(self, node):
-        super().__init__()
-        self.node = node
-        self.ents = HTML()
-        self.children = [
-            VBox(
-                [
-                    HBox(
-                        [
-                            Label("Entities: "),
-                            self.ents,
-                        ]
-                    ),
-                ]
-            )
-        ]
+#     def refresh(self, _=None):
+#         self.ents.value = "<br>".join(
+#             set([str(x) for x in nlp("".join([x["value"] for x in self.node.content])).ents])
+#         )
 
-    def refresh(self, _=None):
-        self.ents.value = "<br>".join(
-            set([str(x) for x in nlp("".join([x["value"] for x in self.node.content])).ents])
-        )
-
-    def set_node(self, node):
-        super().set_node(node)
-        self.refresh()
+#     def set_node(self, node):
+#         super().set_node(node)
+#         self.refresh()
 
 
-class SectionInsights(MyTab):
-    def __init__(self, node):
-        super().__init__()
-        self.node = node
-        self.refresh_btn = Button(icon="refresh")
-        self.refresh_btn.add_class("eris-small-btn")
-        self.refresh_btn.on_click(self.refresh)
-        self.ents = HTML()
-        self.children = [
-            VBox(
-                [
-                    self.refresh_btn,
-                    HBox(
-                        [
-                            Label("Entities: "),
-                            self.ents,
-                        ]
-                    ),
-                ]
-            )
-        ]
-    def refresh(self, _=None):
-        dd = defaultdict(int)
-        for node in self.node.dfs():
-            if node._type == "text":
-                for ent in nlp(" ".join([x["value"].strip() for x in node.content])).ents:
-                    dd[str(ent).strip().lower()]+=1
-        results = sorted(list(dd.items()), key=lambda x: x[1], reverse=True)[:5]
-        view = "".join([f"<tr><td>{x[0]}</td><td>{x[1]}</td></tr>" for x in results])
-        self.ents.value = f"<table>{view}<tr><td>...</td></tr></table>"
+# class SectionInsights(MyTab):
+#     def __init__(self, node):
+#         super().__init__()
+#         self.node = node
+#         self.refresh_btn = Button(icon="refresh")
+#         self.refresh_btn.add_class("eris-small-btn")
+#         self.refresh_btn.on_click(self.refresh)
+#         self.ents = HTML()
+#         self.children = [
+#             VBox(
+#                 [
+#                     self.refresh_btn,
+#                     HBox(
+#                         [
+#                             Label("Entities: "),
+#                             self.ents,
+#                         ]
+#                     ),
+#                 ]
+#             )
+#         ]
+#     def refresh(self, _=None):
+#         dd = defaultdict(int)
+#         for node in self.node.dfs():
+#             if node._type == "text":
+#                 for ent in nlp(" ".join([x["value"].strip() for x in node.content])).ents:
+#                     dd[str(ent).strip().lower()]+=1
+#         results = sorted(list(dd.items()), key=lambda x: x[1], reverse=True)[:5]
+#         view = "".join([f"<tr><td>{x[0]}</td><td>{x[1]}</td></tr>" for x in results])
+#         self.ents.value = f"<table>{view}<tr><td>...</td></tr></table>"
 
 
 from ipycytoscape import CytoscapeWidget
