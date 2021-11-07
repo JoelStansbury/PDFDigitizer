@@ -49,4 +49,4 @@ When a `Text` node is selected, the selection tool will attempt to parse text fr
 When an `Image` node is selected, the coordinates of the box are appended to the node's content.
 
 ### Save Button
-This will generate `json` files for each document in the directory with instruction for regenerating any nodes you have created when you open the tool again. Alternatively, you can just load the json into another script to extract the document structure if all you want is the text and the hierarchy.
+This will generate `json` files for each document in the directory with instructions for regenerating any nodes you have created when you open the tool again. Alternatively, you can just load the json into another script to extract the document structure if all you want is the text and the hierarchy.
