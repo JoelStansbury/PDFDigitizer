@@ -8,6 +8,7 @@ Somewhat user-friendly tool to help parse out structured text from a pdf documen
 conda env create -f environment.yml
 conda activate pdf
 pip install -e pdf_annotation
+python -m spacy download en_core_web_lg
 ```
 
 ## Usage
