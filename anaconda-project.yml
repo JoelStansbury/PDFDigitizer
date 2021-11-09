@@ -59,7 +59,7 @@ env_specs:
     - numpy
     - pandas
     - pdf2image
-    - pip
+    - poppler
     - pytesseract
     - spacy
     - traitlets
@@ -72,6 +72,7 @@ env_specs:
     - coverage
     - flake8
     - isort
+    - pip
     - pylint
     - pytest
     - pytest-asyncio
