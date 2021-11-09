@@ -1,22 +1,24 @@
 # PDF Digitizer (_It has a back button!!_)
-Somewhat user-friendly tool to help parse out structured text from a pdf document
-
-
+A Jupyter-based tool to help parse out structured text from a PDF document and explore the contents.
 
 ## Installation
-```bash
-conda env create -f environment.yml
-conda activate pdf
-pip install -e pdf_annotation
-```
+
+Follow instructions on `CONTRIBUTING.md` to get the development environment set up.  Currently this is the only way to get setup.
 
 ## Usage
-1. First, you'll need some pdf documents to play with.
-2. Once you have a folder with all of the pdfs you want to work with, launch the tool with ...
+> Make sure you activate the base environment (i.e., `ipypdf`) by:
+
     ```bash
-    jupyter lab notebooks
+    source activate envs/ipypdf  # in Linux
+    conda activate envs/ipypdf  # in Windows
     ```
-3. Open the notebook `DocTreeBuilder.ipynb`
+
+1. Get some PDF documents to play with.
+2. Once you have a folder with all of the pdfs you want to work with, launch the tool with
+    ```bash
+    anaconda-project run lab
+    ```
+3. Open the notebook `DocTreeBuilder.ipynb` in the `notebooks` folder
 4. Edit the path used as a parameter in the App initializer to point to your document directory. By default, this points to a folder in the root of this repo named `pdfs`
 5. Run the first cell with `Shift`+`Enter`
 

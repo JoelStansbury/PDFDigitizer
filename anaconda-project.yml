@@ -1,0 +1,81 @@
+name: ipypdf
+
+icon:
+
+description: |
+  Jupyter widgets for parsing PDF documents and manipulating the data
+
+variables:
+  MAX_LINE_LENGTH: 99
+
+commands:
+  lab:
+    description: launch lab
+    env_spec: developer
+    unix: &lab jupyter lab --no-browser --debug
+    windows: *lab
+  setup:
+    description: setup development environment
+    env_spec: developer
+    unix: |
+      pip install -e pdf_annotation --no-dependencies
+      python -m spacy download en_core_web_lg
+    windows: |
+      pip install -e pdf_annotation --no-dependencies & python -m spacy download en_core_web_lg
+  lint:
+    description: lint the code
+    env_spec: developer
+    unix: |
+      isort .
+      black src/ tests/ -l {{MAX_LINE_LENGTH}}
+      flake8 src/
+      pylint src/ --rcfile=.pylintrc
+    windows: |
+      isort . & black src/ tests/ -l {{MAX_LINE_LENGTH}} & flake8 src/ tests/ & pylint src/ tests/ --rcfile=.pylintrc
+  vscode:
+    env_spec: developer
+    unix: code .
+    windows: code .
+
+channels:
+- conda-forge
+- nodefaults
+
+platforms:
+- linux-64
+- osx-64
+- win-64
+
+env_specs:
+  user:
+    description: The environment for running the notebooks
+    packages:
+    - ipycanvas
+    - ipycytoscape
+    - ipyevents
+    - ipytree
+    - ipywidgets
+    - jupyterlab
+    - numpy
+    - pandas
+    - pdf2image
+    - pip
+    - pytesseract
+    - spacy
+    - traitlets
+  developer:
+    description: The environment for developing the tool
+    inherit_from:
+    - user
+    packages:
+    - black
+    - coverage
+    - flake8
+    - isort
+    - pylint
+    - pytest
+    - pytest-asyncio
+    - pytest-cov
+    - pytest-html
+    - pytest-xdist
+    - testbook
