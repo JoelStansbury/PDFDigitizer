@@ -68,6 +68,7 @@ env_specs:
     - pdf2image
     - poppler
     - pytesseract
+    - tesseract
   user:
     description: The environment for running the notebooks
     inherit_from:
