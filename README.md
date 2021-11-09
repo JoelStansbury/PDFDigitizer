@@ -2,7 +2,6 @@
 A Jupyter-based tool to help parse out structured text from a PDF document and explore the contents.
 
 ## Installation
-
 Follow instructions on `CONTRIBUTING.md` to get the development environment set up.  Currently this is the only way to get setup.
 
 ## Usage
