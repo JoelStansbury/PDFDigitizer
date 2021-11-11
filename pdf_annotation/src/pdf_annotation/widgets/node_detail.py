@@ -1,4 +1,4 @@
-from ipywidgets import Tab, HTML, VBox, Button, HBox, Textarea, Output
+from ipywidgets import Tab, HTML, VBox, Button, HBox, Textarea, Output, FloatSlider, Checkbox
 from IPython.display import display
 from spacy.tokens import token
 from traitlets import Unicode, Instance, observe, link, List
@@ -40,6 +40,7 @@ class NodeDetail(Tab):
             SpacyInsights(node),
             # SectionInsights(node),
             Cytoscape(node),
+            # Summary(node),
         ]
         self.titles = [
             "Info",
@@ -48,7 +49,8 @@ class NodeDetail(Tab):
             "Text Block Tools",
             "Spacy",
             # "Insights",
-            "Cytoscape"
+            "Cytoscape",
+            # "Summary",
         ]
 
         self.set_title(0, "Info")
@@ -252,10 +254,16 @@ class Cytoscape(MyTab):
         )
         self.refresh_btn.add_class("eris-small-btn")
         self.refresh_btn.on_click(self.refresh)
+        self.slider = FloatSlider(0.4, min=0,max=1)
+        self.config_btn_recursive = Checkbox(True, description="Recursive")
+        self.confib_btn_intradoc = Checkbox(True, description="Intra-document connections")
         self.children = [
             VBox(
                 [
                     self.refresh_btn,
+                    self.slider,
+                    self.config_btn_recursive,
+                    self.confib_btn_intradoc,
                     HTML("Hit refresh to generate cytoscape")
                 ]
             )
@@ -269,15 +277,26 @@ class Cytoscape(MyTab):
             VBox(
                 [
                     self.refresh_btn,
+                    self.slider,
+                    self.config_btn_recursive,
+                    self.confib_btn_intradoc,
                     HTML("loading...")
                 ]
             )
         ]
-        
-        docs = {
-            node: node.stringify()
-            for node in self.node.dfs()
-        }
+        if self.config_btn_recursive.value:
+            gen = self.node.dfs()
+            next(gen)  # skip first
+            docs = {
+                node: node.stringify()
+                for node in gen
+            }
+        else:
+            docs = {
+                node: node.stringify()
+                for node in self.node.nodes
+            }
+
         for doc, v in list(docs.items()):
             if v == '' or doc.label=="":
                 docs.pop(doc)
@@ -290,6 +309,9 @@ class Cytoscape(MyTab):
                 VBox(
                     [
                         self.refresh_btn,
+                        self.slider,
+                        self.config_btn_recursive,
+                        self.confib_btn_intradoc,   
                         HTML("Not enough nodes")
                     ]
                 )
@@ -308,13 +330,20 @@ class Cytoscape(MyTab):
         for source, edges in sim.items():
             for edge in edges:
                 target, weight = edge
-                if weight>0.35 and source._id!=target._id:
+                if weight>self.slider.value and source._id!=target._id:
                     pair = tuple(sorted([source._id, target._id]))
                     if not pair in pairs:
-                        nodes_with_edges.add(source)
-                        nodes_with_edges.add(target)
-                        g_edges.append({"data":{"source":source._id, 'target':target._id}})
-                        pairs.add(pair)
+                        if self.confib_btn_intradoc.value:
+                            nodes_with_edges.add(source)
+                            nodes_with_edges.add(target)
+                            g_edges.append({"data":{"source":source._id, 'target':target._id}})
+                            pairs.add(pair)
+                        elif source._path != target._path:
+                            nodes_with_edges.add(source)
+                            nodes_with_edges.add(target)
+                            g_edges.append({"data":{"source":source._id, 'target':target._id}})
+                            pairs.add(pair)
+
         graph_dict = {
             "nodes":[
                 {"data":{"id":node._id, "color":cmap[node._path], "name":node.label}} 
@@ -333,6 +362,9 @@ class Cytoscape(MyTab):
             VBox(
                 [
                     self.refresh_btn,
+                    self.slider,
+                    self.config_btn_recursive,
+                    self.confib_btn_intradoc,
                     cyto
                 ]
             )
@@ -360,3 +392,30 @@ class Cytoscape(MyTab):
                 'text-outline-color': 'black'
             }}
             ])
+
+
+# class Summary(MyTab):
+#     def __init__(self, node):
+#         super().__init__()
+
+#         self.refresh_btn = Button(icon="refresh")
+#         self.refresh_btn.add_class("eris-small-btn")
+#         self.refresh_btn.on_click(self.refresh)
+
+#         self.utils = HBox(
+#             [
+#                 self.refresh_btn
+#             ]
+#         )
+#         self.children = [self.utils]
+
+#     def refresh(self, _=None):
+#         summary = summarize(self.node.stringify())
+        
+#         self.children = [
+#             VBox([
+#                 self.utils,
+#                 HTML(summary),
+#             ])
+#         ]
+
