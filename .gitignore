@@ -3,3 +3,6 @@ __pycache__
 Untitled.*
 *.egg-info
 .ipynb_checkpoints
+.vscode/
+envs/
+ap.bat
