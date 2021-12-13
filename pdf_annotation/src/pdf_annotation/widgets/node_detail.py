@@ -188,7 +188,7 @@ class SpacyInsights(MyTab):
 
     def refresh(self, _=None):
         doc = nlp(self.node.stringify())
-        ents = '<strong>Entities: </strong>"'+ ('", "'.join([str(x) for x in doc.ents])) + '"'
+        ents = pd.DataFrame([{"Entity": x.text, "Label":x.label_} for x in doc.ents])
         token_df = pd.DataFrame([
             {
                 "TEXT": token.text,
@@ -205,7 +205,7 @@ class SpacyInsights(MyTab):
         self.children = [
             VBox([
                 self.utils,
-                HTML(ents),
+                DataFrame(ents),
                 DataFrame(token_df)
             ])
         ]

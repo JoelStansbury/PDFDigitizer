@@ -157,7 +157,7 @@ class _Content(VBox):
         
     def on_hover(self, event):
         h = event["boundingRectHeight"]
-        row_height = h//self.to_show
+        row_height = h//min(self.to_show, len(self.df))
         y = event["relativeY"]
         i = int(abs(y//row_height))
         self.focus_idx = min(self.to_show-1, i) # Calls self.focus()
