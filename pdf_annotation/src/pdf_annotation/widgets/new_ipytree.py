@@ -152,12 +152,12 @@ class MyNode(Node):
         self.content = self.content + [item]
 
     def collapse_to(self, level):
-        if level == 0:
-            self.opened = False
-            for n in self.nodes:
-                n.opened = False
-        else:
+        if level > 0:
             self.opened = True
+            for n in self.nodes:
+                n.collapse_to(level - 1)
+        else:
+            self.opened = False
             for n in self.nodes:
                 n.collapse_to(level - 1)
 
