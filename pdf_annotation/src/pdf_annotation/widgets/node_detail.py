@@ -199,9 +199,6 @@ class SpacyInsights(MyTab):
             } for token in doc
         ])
         
-        # df_out = Output()
-        # with df_out:
-        #     display(token_df)
         self.children = [
             VBox([
                 self.utils,

@@ -33,6 +33,7 @@ def pil_2_widget(img, format="png"):
     return Image(value=imgByteArr.getvalue())
 
 def rel_2_pil(rel_coords, w, h):
+    """Scales up the relative coordinates to x1, y1, x2, y2"""
     x1,x2,y1,y2 = rel_coords
     return [int(x) for x in [x1*w, y1*h, x2*w, y2*h]]
 

@@ -166,7 +166,10 @@ class App(ipyw.HBox):
         self.redraw_boxes()
 
     def handle_textblock(self, rel_coords):
-        text = tess.image_to_string(rel_crop(self.full_img, rel_coords))
+        text = tess.image_to_string(
+            rel_crop(self.full_img, rel_coords), 
+            config="--psm 1"  # Automatic page segmentation with OSD.
+        )
 
         item = {"value": text, "page": self.img_index, "coords": rel_coords}
         self.active_node.add_content(item)
