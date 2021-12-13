@@ -37,6 +37,10 @@ def rel_2_pil(rel_coords, w, h):
     x1,x2,y1,y2 = rel_coords
     return [int(x) for x in [x1*w, y1*h, x2*w, y2*h]]
 
+def pil_2_rel(coords, w, h):
+    x1,y1,x2,y2 = coords
+    return [x for x in [x1/w, x2/w, y1/h, y2/h]]
+
 def rel_crop(img, rel_coords):
     coords = rel_2_pil(rel_coords, img.width, img.height)
     return img.crop(coords)

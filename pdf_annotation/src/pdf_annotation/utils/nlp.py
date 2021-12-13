@@ -130,8 +130,6 @@ def levenshtein_distance(s, t):
             if s[row-1] == t[col-1]:
                 cost = 0 # If the characters are the same in the two strings in a given position [i,j] then the cost is 0
             else:
-                # In order to align the results with those of the Python Levenshtein package, if we choose to calculate the ratio
-                # the cost of a substitution is 2. If we calculate just distance, then the cost of a substitution is 1.
                 cost = 1
             distance[row][col] = min(distance[row-1][col] + 1,      # Cost of deletions
                                  distance[row][col-1] + 1,          # Cost of insertions

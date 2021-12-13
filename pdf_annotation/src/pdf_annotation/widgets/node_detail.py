@@ -10,6 +10,7 @@ from random import shuffle
 import pandas as pd
 
 from ..utils.nlp import tfidf_similarity
+from ..utils.generate_training_data import get_text_blocks
 from .dataframe_widget import DataFrame
 
 try:
@@ -21,7 +22,7 @@ except:
 
 NODE_KWARGS = {
     "folder": [0,5],
-    "pdf": [1,5],
+    "pdf": [1,6,5],
     "section": [1,5],
     "text": [3,4],
     "image": [2],
@@ -38,8 +39,9 @@ class NodeDetail(Tab):
             ImageTools(node),
             TextBlockTools(node),
             SpacyInsights(node),
-            # SectionInsights(node),
             Cytoscape(node),
+            AutoTools(node),
+            # SectionInsights(node),
             # Summary(node),
         ]
         self.titles = [
@@ -48,8 +50,9 @@ class NodeDetail(Tab):
             "Image Tools",
             "Text Block Tools",
             "Spacy",
-            # "Insights",
             "Cytoscape",
+            "AutoTools",
+            # "Insights",
             # "Summary",
         ]
 
@@ -416,3 +419,30 @@ class Cytoscape(MyTab):
 #             ])
 #         ]
 
+
+class AutoTools(MyTab):
+    def __init__(self, node):
+        super().__init__()
+
+        extract_text_btn = Button(
+            icon="align-left",
+            tooltip="Detect and parse text-blocks",
+        )
+        extract_text_btn.on_click(self.extract_text)
+#         self.refresh_btn.add_class("eris-small-btn")
+#         self.refresh_btn.on_click(self.refresh)
+
+#         self.utils = HBox(
+#             [
+#                 self.refresh_btn
+#             ]
+#         )
+        self.children = [extract_text_btn]
+    def extract_text(self, _):
+        for tb in get_text_blocks(self.node._path):
+            self.node.add_node(
+                MyNode(
+                    data={"type": "text", "path": self.node._path, "children": {}, "content": [tb]},
+                    parent=self.node._id
+                )
+            )
