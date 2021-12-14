@@ -22,7 +22,7 @@ except:
 
 NODE_KWARGS = {
     "folder": [0,5],
-    "pdf": [1,6,5],
+    "pdf": [1,6,5,4],
     "section": [1,5],
     "text": [3,4],
     "image": [2],
@@ -191,7 +191,14 @@ class SpacyInsights(MyTab):
 
     def refresh(self, _=None):
         doc = nlp(self.node.stringify())
-        ents = pd.DataFrame([{"Entity": x.text, "Label":x.label_} for x in doc.ents])
+        ents = defaultdict(int)
+        for ent in doc.ents:
+            ents[(ent.text, ent.label_)] += 1
+        ent_rows = []
+        for k,v in ents.items():
+            ent_rows.append({"Entity":k[0], "Label":k[1], "Count":v})
+        ent_rows.sort(key=lambda x: x["Count"], reverse=True)
+        ents = pd.DataFrame(ent_rows)
         token_df = pd.DataFrame([
             {
                 "TEXT": token.text,
