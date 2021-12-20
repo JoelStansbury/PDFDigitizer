@@ -26,6 +26,7 @@ Follow instructions on `CONTRIBUTING.md` to get the development environment set 
 ### Auto-Parser
 `layoutparser` is used to determine the location of textblocks, images, and section headers. There is not currently a way to automatically determine the hierarchical position of these items. 
 ![ezgif-3-51d38d81b3](https://user-images.githubusercontent.com/48299585/146793946-6af29c6d-d83c-4437-ac62-b56d2f787da8.gif)
+> Note: this is 4x speed
 
 
 ### Cytoscape
