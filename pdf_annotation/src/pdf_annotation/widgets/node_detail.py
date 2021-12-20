@@ -2,22 +2,24 @@ from ipywidgets import Tab, HTML, VBox, Button, HBox, Textarea, Output, FloatSli
 from IPython.display import display
 from spacy.tokens import token
 from traitlets import Unicode, Instance, observe, link, List
-from .new_ipytree import MyNode, NODE_REGISTER
 from collections import defaultdict
-# import spacy
+
 import matplotlib.colors as mcolors
 from random import shuffle
 import pandas as pd
+import spacy
+import layoutparser as lp
+import pytesseract as tess
 
+from ..widgets.new_ipytree import MyNode
+from .new_ipytree import MyNode, NODE_REGISTER
 from ..utils.nlp import tfidf_similarity
+from ..utils.image_utils import ImageContainer, pil_2_rel
 from ..utils.generate_training_data import get_text_blocks
 from .dataframe_widget import DataFrame
 
-try:
-    import spacy
-    nlp = spacy.load("en_core_web_lg")
-except:
-    nlp = None
+nlp = spacy.load("en_core_web_lg")
+lp_model = lp.models.PaddleDetectionLayoutModel('lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config')
 
 
 NODE_KWARGS = {
@@ -431,21 +433,21 @@ class AutoTools(MyTab):
     def __init__(self, node):
         super().__init__()
 
-        extract_text_btn = Button(
-            icon="align-left",
+        tesseract_btn = Button(
+            description="Text Only",
             tooltip="Detect and parse text-blocks",
         )
-        extract_text_btn.on_click(self.extract_text)
-#         self.refresh_btn.add_class("eris-small-btn")
-#         self.refresh_btn.on_click(self.refresh)
+        layoutparser_btn = Button(
+            description="Parse Document",
+            tooltip="Detect and parse (sections, textblocks, and images)",
+        )
+        tesseract_btn.on_click(self.extract_text)
+        layoutparser_btn.on_click(self.extract_layout)
+        self.progress = HTML()
+        self.children = [VBox([layoutparser_btn,tesseract_btn,self.progress])]
 
-#         self.utils = HBox(
-#             [
-#                 self.refresh_btn
-#             ]
-#         )
-        self.children = [extract_text_btn]
     def extract_text(self, _):
+        self.progress.value = "Detecting Textblocks: ..."
         for tb in get_text_blocks(self.node._path):
             self.node.add_node(
                 MyNode(
@@ -453,3 +455,62 @@ class AutoTools(MyTab):
                     parent=self.node._id
                 )
             )
+        self.progress.value = ""
+    def extract_layout(self, _):
+        path = self.node._path
+        imgs = ImageContainer(path, bulk_render=False)
+        for page_num, img in enumerate(imgs):
+            self.progress.value = f"LayoutParser: {page_num+1}/{imgs.info['Pages']}"
+            layout = lp_model.detect(img)
+            for block in layout:
+                x1,y1,x2,y2 = [int(x) for x in block.coordinates]
+                coords = (x1,y1,x2+20,y2+5)
+                text = tess.image_to_string(img.crop(coords)).strip()
+                rel_coords = pil_2_rel(coords, img.width, img.height)
+                content = [{"value":text,"page":page_num,"coords":rel_coords}]
+                if block.type == "Title":
+                    self.node.add_node(
+                        MyNode(
+                            label=text,
+                            data={
+                                "type": "section",
+                                "path": self.node._path,
+                                "children": {},
+                                "content": content,
+                                "label":text
+                            },
+                            parent=self.node._id
+                        )
+                    )
+                elif block.type in ["List", "Text"]:
+                    self.node.add_node(
+                        MyNode(
+                            data={
+                                "type": "text",
+                                "path": self.node._path,
+                                "children": {},
+                                "content": content
+                            },
+                            parent=self.node._id
+                        )
+                    )
+                elif block.type in ["Figure", "Table"]:
+                    self.node.add_node(
+                        MyNode(
+                            data={
+                                "type": "image",
+                                "path": self.node._path,
+                                "children": {},
+                                "content": [
+                                    {
+                                        "value":None,
+                                        "page":page_num,
+                                        "coords":pil_2_rel(block.coordinates, img.width, img.height)
+                                    }
+                                ]
+                            },
+                            parent=self.node._id
+                        )
+                    )
+            self.progress.value = ""
+
