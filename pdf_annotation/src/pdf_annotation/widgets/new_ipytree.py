@@ -44,6 +44,11 @@ NODE_KWARGS = {
         "make_dict": False,
         "is_text": False,
     },
+    "table": {
+        "icon": "table",
+        "make_dict": False,
+        "is_text": False
+    }
 }
 
 

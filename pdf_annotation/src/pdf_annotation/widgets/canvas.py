@@ -6,6 +6,7 @@ CANVAS_TYPE_KWARGS = {
     "image": {"color": "red"},
     "pdf": {"color": "black"},  # Unused
     "folder": {"color": "black"},  # Unused
+    "table": {"color": "green"},
 }
 class PdfCanvas(MultiCanvas):
 

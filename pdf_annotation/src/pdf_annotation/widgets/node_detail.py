@@ -8,10 +8,16 @@ from collections import defaultdict
 import matplotlib.colors as mcolors
 from random import shuffle
 import pandas as pd
+import spacy
+import layoutparser as lp
+import pytesseract as tess
+from PIL import Image
 
 from ..utils.nlp import tfidf_similarity
+from ..utils.image_utils import ImageContainer, pil_2_rel, rel_2_pil
 from ..utils.generate_training_data import get_text_blocks
 from .dataframe_widget import DataFrame
+from ..utils.table_extraction import img_2_table
 
 try:
     import spacy
@@ -26,6 +32,7 @@ NODE_KWARGS = {
     "section": [1,5],
     "text": [3,4],
     "image": [2],
+    "table": [7]
 }
 
 
@@ -41,6 +48,7 @@ class NodeDetail(Tab):
             SpacyInsights(node),
             Cytoscape(node),
             AutoTools(node),
+            TableTools(node),
             # SectionInsights(node),
             # Summary(node),
         ]
@@ -52,6 +60,7 @@ class NodeDetail(Tab):
             "Spacy",
             "Cytoscape",
             "AutoTools",
+            "TableTools"
             # "Insights",
             # "Summary",
         ]
@@ -126,9 +135,17 @@ class SubsectionTools(MyTab):
         image.on_click(self.add_node)
         image.add_class("eris-small-btn")
 
-        self._types = {text: "text", section: "section", image: "image"}
+        
+        table = Button(
+            icon="table",
+            tooltip="Add a Table",
+        )
+        table.on_click(self.add_node)
+        table.add_class("eris-small-btn")
 
-        self.children = [section, text, image, self.delete_btn]
+        self._types = {text: "text", section: "section", image: "image", table: "table"}
+
+        self.children = [section, text, image, table, self.delete_btn]
 
 
 class ImageTools(MyTab):
@@ -217,39 +234,9 @@ class SpacyInsights(MyTab):
             ])
         ]
 
-# class SectionInsights(MyTab):
-#     def __init__(self, node):
-#         super().__init__()
-#         self.node = node
-#         self.refresh_btn = Button(icon="refresh")
-#         self.refresh_btn.add_class("eris-small-btn")
-#         self.refresh_btn.on_click(self.refresh)
-#         self.ents = HTML()
-#         self.children = [
-#             VBox(
-#                 [
-#                     self.refresh_btn,
-#                     HBox(
-#                         [
-#                             Label("Entities: "),
-#                             self.ents,
-#                         ]
-#                     ),
-#                 ]
-#             )
-#         ]
-#     def refresh(self, _=None):
-#         dd = defaultdict(int)
-#         for node in self.node.dfs():
-#             if node._type == "text":
-#                 for ent in nlp(" ".join([x["value"].strip() for x in node.content])).ents:
-#                     dd[str(ent).strip().lower()]+=1
-#         results = sorted(list(dd.items()), key=lambda x: x[1], reverse=True)[:5]
-#         view = "".join([f"<tr><td>{x[0]}</td><td>{x[1]}</td></tr>" for x in results])
-#         self.ents.value = f"<table>{view}<tr><td>...</td></tr></table>"
-
 
 from ipycytoscape import CytoscapeWidget
+
 
 class Cytoscape(MyTab):
     def __init__(self, node):
@@ -401,32 +388,6 @@ class Cytoscape(MyTab):
             ])
 
 
-# class Summary(MyTab):
-#     def __init__(self, node):
-#         super().__init__()
-
-#         self.refresh_btn = Button(icon="refresh")
-#         self.refresh_btn.add_class("eris-small-btn")
-#         self.refresh_btn.on_click(self.refresh)
-
-#         self.utils = HBox(
-#             [
-#                 self.refresh_btn
-#             ]
-#         )
-#         self.children = [self.utils]
-
-#     def refresh(self, _=None):
-#         summary = summarize(self.node.stringify())
-        
-#         self.children = [
-#             VBox([
-#                 self.utils,
-#                 HTML(summary),
-#             ])
-#         ]
-
-
 class AutoTools(MyTab):
     def __init__(self, node):
         super().__init__()
@@ -453,3 +414,97 @@ class AutoTools(MyTab):
                     parent=self.node._id
                 )
             )
+        self.progress.value = ""
+    def extract_layout(self, _):
+        path = self.node._path
+        imgs = ImageContainer(path, bulk_render=False)
+        for page_num, img in enumerate(imgs):
+            self.progress.value = f"LayoutParser: {page_num+1}/{imgs.info['Pages']}"
+            layout = lp_model.detect(img)
+            for block in layout:
+                x1,y1,x2,y2 = [int(x) for x in block.coordinates]
+                coords = (x1,y1,x2+20,y2+5)
+                text = tess.image_to_string(img.crop(coords)).strip()
+                rel_coords = pil_2_rel(coords, img.width, img.height)
+                content = [{"value":text,"page":page_num,"coords":rel_coords}]
+                if block.type == "Title":
+                    self.node.add_node(
+                        MyNode(
+                            label=text,
+                            data={
+                                "type": "section",
+                                "path": self.node._path,
+                                "children": {},
+                                "content": content,
+                                "label":text
+                            },
+                            parent=self.node._id
+                        )
+                    )
+                elif block.type in ["List", "Text"]:
+                    self.node.add_node(
+                        MyNode(
+                            data={
+                                "type": "text",
+                                "path": self.node._path,
+                                "children": {},
+                                "content": content
+                            },
+                            parent=self.node._id
+                        )
+                    )
+                elif block.type in ["Figure", "Table"]:
+                    self.node.add_node(
+                        MyNode(
+                            data={
+                                "type": "image",
+                                "path": self.node._path,
+                                "children": {},
+                                "content": [
+                                    {
+                                        "value":None,
+                                        "page":page_num,
+                                        "coords":pil_2_rel(block.coordinates, img.width, img.height)
+                                    }
+                                ]
+                            },
+                            parent=self.node._id
+                        )
+                    )
+            self.progress.value = ""
+
+
+class TableTools(MyTab):
+    def __init__(self, node):
+        super().__init__()
+        self.node = node
+
+        text = Button(
+            icon="align-left",
+            tooltip="Add a description for the table",
+        )
+        text.on_click(self.add_node)
+        text.add_class("eris-small-btn")
+
+        self._types = {
+            text: "text",
+        }
+
+        parse_btn = Button(
+            description="Parse Content",
+            tooltip="Add a description for the table",
+        )
+        parse_btn.on_click(self.parse)
+
+        self.children = [text, parse_btn, self.delete_btn]
+    
+    def parse(self, _):
+        path = self.node._path
+        imgs = ImageContainer(path, bulk_render=False)
+        img = imgs[self.node.content[0]["page"]]
+        coords = self.node.content[0]["coords"]
+        
+        cropped_img = img.crop(rel_2_pil(coords, img.width, img.height))
+        cropped_img.show()
+        img_2_table(cropped_img)
+        # print("test")
