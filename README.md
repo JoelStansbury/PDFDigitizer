@@ -7,10 +7,10 @@ Follow instructions on `CONTRIBUTING.md` to get the development environment set 
 ## Usage
 > Make sure you activate the base environment (i.e., `ipypdf`) by:
 
-    ```bash
-    source activate envs/ipypdf  # in Linux
-    conda activate envs/ipypdf  # in Windows
-    ```
+```bash
+source activate envs/ipypdf  # in Linux
+conda activate envs/ipypdf  # in Windows
+```
 
 1. Get some PDF documents to play with.
 2. Once you have a folder with all of the pdfs you want to work with, launch the tool with
