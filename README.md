@@ -22,6 +22,13 @@ Follow instructions on `CONTRIBUTING.md` to get the development environment set 
 5. Run the first cell with `Shift`+`Enter`
 
 ## Features
+
+### Auto-Parser
+`layoutparser` is used to determine the location of textblocks, images, and section headers. There is not currently a way to automatically determine the hierarchical position of these items. 
+![ezgif-3-51d38d81b3](https://user-images.githubusercontent.com/48299585/146793946-6af29c6d-d83c-4437-ac62-b56d2f787da8.gif)
+> Note: this is 4x speed
+
+
 ### Cytoscape
 `Folders`, `PDF Documents`, and `Sections` have a tab labeled `Cytoscape`. This runs a tfidf similarity calculation over all nodes beneath the selected item. I.e. if you select the root node, then all defined nodes will be included in the calculation. However, only those with a link to another node will be drawn (this is for speed, may change this in the future).
 

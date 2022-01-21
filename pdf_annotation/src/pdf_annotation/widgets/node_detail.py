@@ -2,9 +2,8 @@ from ipywidgets import Tab, HTML, VBox, Button, HBox, Textarea, Output, FloatSli
 from IPython.display import display
 from spacy.tokens import token
 from traitlets import Unicode, Instance, observe, link, List
-from .new_ipytree import MyNode, NODE_REGISTER
 from collections import defaultdict
-# import spacy
+
 import matplotlib.colors as mcolors
 from random import shuffle
 import pandas as pd
@@ -13,6 +12,8 @@ import layoutparser as lp
 import pytesseract as tess
 from PIL import Image
 
+from ..widgets.new_ipytree import MyNode
+from .new_ipytree import MyNode, NODE_REGISTER
 from ..utils.nlp import tfidf_similarity
 from ..utils.image_utils import ImageContainer, pil_2_rel, rel_2_pil, rel_2_cv2, cv2_2_rel
 from ..utils.generate_training_data import get_text_blocks

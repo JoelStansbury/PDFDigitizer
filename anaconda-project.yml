@@ -69,6 +69,10 @@ env_specs:
     - poppler
     - pytesseract
     - tesseract
+    - pip:
+      - layoutparser
+      - layoutparser[paddledetection]
+
   user:
     description: The environment for running the notebooks
     inherit_from:

@@ -118,7 +118,8 @@ class MyNode(Node):
         self.label = label
 
         # Visual aspects of the node
-        self.name = truncate(self.label)
+        page = f' ({self.content[0]["page"]+1})' if self.content else ""
+        self.name = truncate(self.label) + page
         self.icon = NODE_KWARGS[self._type]["icon"]
 
         if not data is None:
@@ -151,7 +152,8 @@ class MyNode(Node):
 
     @observe("label")
     def set_name(self, _):
-        self.name = truncate(self.label)
+        page = f' ({self.content[0]["page"]+1})' if self.content else ""
+        self.name = truncate(self.label) + page
 
     def add_content(self, item):
         self.content = self.content + [item]
