@@ -415,9 +415,50 @@ class AutoTools(MyTab):
     def extract_layout(self, _):
         path = self.node._path
         imgs = ImageContainer(path, bulk_render=False)
+
+        last_section = self.node
         for page_num, img in enumerate(imgs):
             self.progress.value = f"LayoutParser: {page_num+1}/{imgs.info['Pages']}"
-            layout = lp_model.detect(img)
+            layout = list(lp_model.detect(img))
+
+
+
+            # TODO: Swap this out with a system that includes tesseract.
+            #   Tess seems to be able to detect page-breaks pretty reliably
+            x_min=img.width
+            x_max=0
+            for block in layout:
+                mn = block.coordinates[0]
+                mx = block.coordinates[2]
+                x_min = mn if mn < x_min else x_min
+                x_max = mx if mx > x_max else x_max
+            page_width = x_max - x_min
+
+            def column(pil_coords):
+                # NOTE: This places an upper-bound on columns
+                x1,_,x2,_ = pil_coords
+
+                if abs(x1 - x_min)<(page_width/20):
+                    return 0
+
+
+                # if it is centered then column = 0
+                w = x2-x1
+                mid = x1 + (w/2)
+                page_mid = x_min + (page_width/2)
+                if abs(page_mid - mid)<(page_width/50):
+                    return 0
+                
+                # max possible number of columns
+                # c_num = int(page_width//w)
+                
+                return (x1-x_min)//(page_width/10)
+                
+
+            layout.sort(key=lambda x: (column(x.coordinates), x.coordinates[1]))
+            # layout.sort(key=lambda x: column(x.coordinates))
+            #
+            
             for block in layout:
                 x1,y1,x2,y2 = [int(x) for x in block.coordinates]
                 coords = (x1,y1,x2+20,y2+5)
@@ -426,7 +467,7 @@ class AutoTools(MyTab):
                 content = [{"value":text,"page":page_num,"coords":rel_coords}]
                 if block.type == "Title":
                     self.node.add_node(
-                        MyNode(
+                        last_section := MyNode(
                             label=text,
                             data={
                                 "type": "section",
@@ -439,7 +480,7 @@ class AutoTools(MyTab):
                         )
                     )
                 elif block.type in ["List", "Text"]:
-                    self.node.add_node(
+                    last_section.add_node(
                         MyNode(
                             data={
                                 "type": "text",
@@ -451,7 +492,7 @@ class AutoTools(MyTab):
                         )
                     )
                 elif block.type == "Figure":
-                    self.node.add_node(
+                    last_section.add_node(
                         MyNode(
                             data={
                                 "type": "image",
@@ -469,8 +510,8 @@ class AutoTools(MyTab):
                         )
                     )
                 elif block.type == "Table":
-                    self.node.add_node(
-                        MyNode(
+                    last_section.add_node(
+                        table_node := MyNode(
                             data={
                                 "type": "table",
                                 "path": self.node._path,
@@ -486,6 +527,7 @@ class AutoTools(MyTab):
                             parent=self.node._id
                         )
                     )
+                    TableTools(table_node).parse_table()
             self.progress.value = ""
 
 
@@ -494,76 +536,57 @@ class TableTools(MyTab):
         super().__init__()
         self.node = node
 
-        self.text = Button(
-            icon="align-left",
-            tooltip="Add a description for the table",
-        )
-        self.text.on_click(self.add_node)
-        self.text.add_class("eris-small-btn")
-
-        self._types = {
-            self.text: "text",
-        }
-
-        self.parse_btn = Button(
-            description="Parse Content",
-            tooltip="Add a description for the table",
-        )
-        self.parse_btn.on_click(self.parse)
-
-        
         self.parse_table_btn = Button(
             description="Parse Table (Enclosed Cells)",
             tooltip="Construct a dataframe from the image. This option works well on tables with borders around each cell",
         )
         self.parse_table_btn.on_click(self.parse_table)
+        self.children=[self.parse_table_btn, self.delete_btn]
 
-        self.children = [self.text, self.parse_btn, self.parse_table_btn, self.delete_btn]
+    def set_node(self, node):
+        super().set_node(node)
+        if len(node.content) > 1:
+            rows = node.content[-1]["value"]
+            df = pd.DataFrame(rows)
+            self.children = [
+                VBox(
+                    children=[
+                        HBox(children=[self.parse_table_btn, self.delete_btn]),
+                        DataFrame(df, max_char=20)
+                    ]
+                )
+            ]
+        else:
+            self.children=[self.parse_table_btn, self.delete_btn]
     
-    def parse(self, _):
+    def parse_table(self, _=None):
         path = self.node._path
         imgs = ImageContainer(path, bulk_render=False)
         img = imgs[self.node.content[0]["page"]]
         coords = self.node.content[0]["coords"]
         
         cropped_img = img.crop(rel_2_pil(coords, img.width, img.height))
-
-        img_cv2_coords = rel_2_cv2(coords, img.width, img.height)
+        table_coords = rel_2_cv2(coords, img.width, img.height)
         items = img_2_cells(cropped_img)
-        for cv2_coords, text in items:
-            rel_coords = cv2_2_rel(cv2_coords, img.width, img.height, img_cv2_coords)
-            self.node.add_node(MyNode(
-                data={
-                    "type": "text", 
-                    "path": self.node._path,
-                    "children": {}, 
-                    "content":[
-                        {
-                            "value": text,
-                            "page": self.node.content[0]["page"],
-                            "coords": rel_coords
-                        }
-                    ],
-                },
-                parent=self.node._id
-            ))
-        
-    def parse_table(self, _):
-        path = self.node._path
-        imgs = ImageContainer(path, bulk_render=False)
-        img = imgs[self.node.content[0]["page"]]
-        coords = self.node.content[0]["coords"]
-        
-        cropped_img = img.crop(rel_2_pil(coords, img.width, img.height))
-        items = img_2_cells(cropped_img)
-        df = cells_2_table(items)
-        self.children = [
-            VBox(
-                children=[
-                    HBox(children=[self.text, self.parse_btn, self.parse_table_btn, self.delete_btn]),
-                    DataFrame(df, max_char=20)
-                ]
-            )
-        ]
+        rows = cells_2_table(items)
+        for r in rows:
+            for cell in r:
+                rel_coords = cv2_2_rel(cell[0], img.width, img.height, table_coords)
+                self.node.content.append(
+                    {
+                        "value":cell[1],
+                        "page":self.node.content[0]["page"],
+                        "coords":rel_coords,
+                    }
+                )
+        self.node.content.append(
+            {
+                "value":[[c[1] for c in r] for r in rows],
+                "page":self.node.content[0]["page"],
+                "coords":self.node.content[0]["coords"],
+            }
+        )
 
-        # print("test")
+        # Refresh the tab to show the table
+        self.set_node(self.node)
+

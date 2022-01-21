@@ -66,6 +66,7 @@ class _Row(HBox):
         d  = Event(source=self, watched_events=['click'])
         d.on_dom_event(self.on_click)
 
+        self.max_char = max_char
         self.data = [str(x)[:max_char] for x in data]
         self.cells = [_Cell(x, w) for x,w in zip(self.data,widths)]
         self.cells[0].add_class("index")
@@ -73,9 +74,9 @@ class _Row(HBox):
 
     def update(self, data):
         '''Set the cell values to the new `data`'''
-        self.data = data
+        self.data = [str(x)[:self.max_char] for x in data]
         for i,c in enumerate(self.cells):
-            c.update(data[i])
+            c.update(self.data[i])
 
     def on_click(self, event):
         self.value = -1 # Ensures `value` registers a change event
@@ -98,7 +99,7 @@ class _Header(HBox):
             self.content_widget.idx = 0
             self.content_widget.update()
 
-        col_names = [""] + [str(x)[:max_char] for x in df.columns]
+        col_names = [""] + [str(x) for x in df.columns]
         callbacks = [sort_idx] + [sort_col]*len(df.columns)
         params = zip(col_names, widths, callbacks)
 

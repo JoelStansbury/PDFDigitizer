@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import cv2
 
+# TODO: combine img_2_cells and cells_2_table into one function
+# TODO: create a clustering approach for tables without solid borders
 
 def img_2_cells(img, approximate_cell_height=20, approximate_cell_width=150):
     """
@@ -50,40 +52,42 @@ def img_2_cells(img, approximate_cell_height=20, approximate_cell_width=150):
     items.sort(key = lambda x: (x[0][1] // approximate_cell_height, x[0][0] // approximate_cell_width))
     return items
 
+
 def contains(coords, px, py):
     x,y,w,h = coords
     return x<px and x+w>px and y<py and y+h>py
 
 
-def cells_2_table(cells, approximate_cell_height=20, approximate_cell_width=20):
-    # find the shortest height dx
-    # find the find column positions
-    #   because we divide by approx_cell_width, we expect the number of unique
-    #   x_0 to be the number of columns
-    #   NOTE: this should be the approximate midpoint not the approximate start
-    # start at 0,0
-    # intersects(x,y) -> return the cell which contains the point (x,y)
-    # x = 0
-    # rows = []
-    # while x < x_max
-    #   x += dx
-    #   rows.append([intersects(x,y) for y in column_positions])
-    # df = pd.DataFrame(rows)
-    # df.drop_duplicates()
+def cells_2_table(cells, h_thresh=20, w_thresh=20):
+    """
+    Given the cells returned from img_2_cells will try to construct a table
 
+    cells <list<tuple(cv2_coords, str)>>: list of cells returned from img_2_cells
+    h_thresh <int>: Sets the threshold (in pixel distance) required
+        for two cells to be considered different rows
+    w_thresh <int>: Sets the threshold (in pixel distance) required
+        for two cells to be considered different columns
+    """
+
+    # find all row and column boundaries
     column_positions = set()
     row_positions = set()
-    for cv2_coords, text in cells:
-        column_positions.add(approximate_cell_width*(cv2_coords[0]//approximate_cell_width))
-        column_positions.add(approximate_cell_width*((cv2_coords[0] + cv2_coords[2])//approximate_cell_width))
-        row_positions.add(approximate_cell_height*(cv2_coords[1]//approximate_cell_height))
-        row_positions.add(approximate_cell_height*((cv2_coords[1] + cv2_coords[3])//approximate_cell_height))
+    for cv2_coords, _ in cells:
+        # thresh*(x//thresh) is used to filter out small deviations in bboxes
+        column_positions.add(w_thresh*(cv2_coords[0]//w_thresh))
+        column_positions.add(w_thresh*((cv2_coords[0] + cv2_coords[2])//w_thresh))
+        row_positions.add(h_thresh*(cv2_coords[1]//h_thresh))
+        row_positions.add(h_thresh*((cv2_coords[1] + cv2_coords[3])//h_thresh))
     
+    # find the centers of each cell according to the boundaries identified above
     cp = sorted(list(column_positions))
     cp = [cp[i]+(cp[i+1]-cp[i])/2 for i in range(len(cp)-1)]
+
     rp = sorted(list(row_positions))
     rp = [rp[i]+(rp[i+1]-rp[i])/2 for i in range(len(rp)-1)]
 
+    # identify the cells found in the image which best fit each of the cell
+    # midpoints found above
     rows = []
     for y in rp:
         row = []
@@ -92,23 +96,33 @@ def cells_2_table(cells, approximate_cell_height=20, approximate_cell_width=20):
             candidate_cells = [cell for cell in cells if contains(cell[0], x, y)]
             # sort by area
             candidate_cells.sort(key = lambda cell: cell[0][2]*cell[0][3])
-            # use the text contained within the smallest cell as the value
+            # use the smallest cell that encompases the midpoint
             if candidate_cells:
                 row.append(candidate_cells[0])
             else:
                 row.append((None,""))
         rows.append(tuple(row))
     
+    # remove duplicate rows
     unique = []
     for r in rows:
         if not r in unique:
             unique.append(r)
-    rows = unique
-    rows = [
-        [cell[1].strip() for cell in r]
-        for r in rows
-    ]
-    rows = [r for r in rows if not all([x==r[0] for x in r])]
-    if len(set(rows[0])) == len(rows[0]):
-        return pd.DataFrame(rows[1:], columns=rows[0])
-    return pd.DataFrame(rows)
+    rows = [list(r) for r in unique]
+
+    # remove duplicate columns
+    columns_to_remove = []
+    unique_columns = []
+    for c in range(len(rows[0])):
+        col = []
+        for r in rows:
+            col.append(r[c])
+        if tuple(col) in unique_columns:
+            columns_to_remove.append(c)
+        else:
+            unique_columns.append(tuple(col))
+    for c in columns_to_remove[::-1]:
+        for r in rows:
+            r.pop(c)
+    
+    return rows
