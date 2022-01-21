@@ -59,23 +59,24 @@ class _ButtonCell(Button):
 
 class _Row(HBox):
     value = Int(-1).tag(sync=True)
-    def __init__(self, data, widths, on_click, style, _types=None, **kwargs):
+    def __init__(self, data, widths, on_click, style, max_char, _types=None, **kwargs):
         super().__init__(**kwargs)
         self.add_class(style)
         self.observe(on_click, "value")
         d  = Event(source=self, watched_events=['click'])
         d.on_dom_event(self.on_click)
 
-        self.data = data
-        self.cells = [_Cell(x, w) for x,w in zip(data,widths)]
+        self.max_char = max_char
+        self.data = [str(x)[:max_char] for x in data]
+        self.cells = [_Cell(x, w) for x,w in zip(self.data,widths)]
         self.cells[0].add_class("index")
         self.children = self.cells
 
     def update(self, data):
         '''Set the cell values to the new `data`'''
-        self.data = data
+        self.data = [str(x)[:self.max_char] for x in data]
         for i,c in enumerate(self.cells):
-            c.update(data[i])
+            c.update(self.data[i])
 
     def on_click(self, event):
         self.value = -1 # Ensures `value` registers a change event
@@ -84,7 +85,7 @@ class _Row(HBox):
 
 
 class _Header(HBox):
-    def __init__(self, df, widths, content_widget, **kwargs):
+    def __init__(self, df, widths, content_widget, max_char, **kwargs):
         super().__init__()
         self.df = df
         self.content_widget = content_widget
@@ -98,7 +99,7 @@ class _Header(HBox):
             self.content_widget.idx = 0
             self.content_widget.update()
 
-        col_names = [""] + list(df.columns)
+        col_names = [""] + [str(x) for x in df.columns]
         callbacks = [sort_idx] + [sort_col]*len(df.columns)
         params = zip(col_names, widths, callbacks)
 
@@ -109,7 +110,7 @@ class _Content(VBox):
     value = Int(-1).tag(sync=True)
     focus_idx = Int(-1).tag(sync=True)
 
-    def __init__(self, df, to_show, widths, wrap_around, **kwargs):
+    def __init__(self, df, to_show, widths, wrap_around, max_char, **kwargs):
         super().__init__(**kwargs)
         self.add_class("content")
         d  = Event(source=self, watched_events=['wheel', "mousemove", "mouseleave"])
@@ -130,7 +131,9 @@ class _Content(VBox):
                         data=self.records[i], 
                         widths=widths, 
                         on_click=row_on_click,
-                        style=["row_even","row_odd"][i%2])
+                        style=["row_even","row_odd"][i%2],
+                        max_char=max_char,
+                    )
                     for i in range(self.num_rows)
                 ]
             )
@@ -207,8 +210,9 @@ class DataFrame(VBox):
         default: 10
     """
     value = Int().tag(sync=True)
-    def __init__(self, df, num_rows=10, wrap_around=False, **kwargs):
+    def __init__(self, df, num_rows=10, wrap_around=False, max_char=-1, **kwargs):
         super().__init__(**kwargs)
+        self.max_char = max_char
 
         width, widths = self.auto_width(df, num_rows)
 
@@ -218,9 +222,9 @@ class DataFrame(VBox):
         
         self.css = HTML(CSS)
         self.add_class("main")
-        self.content = _Content(df, num_rows, widths, wrap_around)
+        self.content = _Content(df, num_rows, widths, wrap_around, max_char)
         link((self.content, "value"), (self, "value"))
-        self.header = _Header(df, widths, self.content)
+        self.header = _Header(df, widths, self.content, max_char)
         self.children = [self.header, self.content, self.css]
 
     def auto_width(self, df, num_rows):
@@ -235,8 +239,8 @@ class DataFrame(VBox):
         widths = {}
 
         for c in cols:
-            c_width = len(str(c))
-            d_width = max([len(str(x)) for x in df[c].values[:num_rows]])
+            c_width = len(str(c)[:self.max_char])
+            d_width = max([len(str(x)[:self.max_char]) for x in df[c].values[:num_rows]])
             widths[c] = max(c_width, d_width) + spacing
 
         # Make space for index values

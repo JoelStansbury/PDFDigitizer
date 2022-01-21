@@ -82,6 +82,11 @@ env_specs:
     packages:
     - numpy
     - pandas
+    - opencv-python
+    - pip
+    - pip:
+      - layoutparser
+      - "layoutparser[paddledetection]"
   developer:
     description: The environment for developing the tool
     inherit_from:

@@ -44,6 +44,11 @@ NODE_KWARGS = {
         "make_dict": False,
         "is_text": False,
     },
+    "table": {
+        "icon": "table",
+        "make_dict": False,
+        "is_text": False
+    }
 }
 
 
@@ -209,3 +214,18 @@ class MyNode(Node):
         for c in self.nodes:
             content.append(c.stringify())
         return " ".join(content)
+    
+    def to_html(self, level=1):
+
+        """"""
+        if self._type == "section":
+            s = self.label
+            html = f"<h{level}>{s}</h{level}>"
+        elif self._type == "text":
+            s = " ".join([x["value"] for x in self.content])
+            html = s.replace("\n\n"," ").replace("\n"," ").replace("\u00a2","").replace("\u2014","").replace("\f","")
+        else:
+            html = ""
+        for c in self.nodes:
+            html += c.to_html(level+1)
+        return html

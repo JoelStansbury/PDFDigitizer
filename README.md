@@ -28,6 +28,11 @@ Follow instructions on `CONTRIBUTING.md` to get the development environment set 
 ![ezgif-3-51d38d81b3](https://user-images.githubusercontent.com/48299585/146793946-6af29c6d-d83c-4437-ac62-b56d2f787da8.gif)
 > Note: this is 4x speed
 
+> Also: This video is out-dated now. The AutoParse button will now attempt to sort all of the nodes. As well as attempting to deduce the 1st level of hierarchical structure.
+
+### Table Parsing
+![image](https://user-images.githubusercontent.com/48299585/150610905-566d6e33-b2ac-4eed-b4c5-463f1d9e35f2.png)
+
 
 ### Cytoscape
 `Folders`, `PDF Documents`, and `Sections` have a tab labeled `Cytoscape`. This runs a tfidf similarity calculation over all nodes beneath the selected item. I.e. if you select the root node, then all defined nodes will be included in the calculation. However, only those with a link to another node will be drawn (this is for speed, may change this in the future).

@@ -45,6 +45,27 @@ def rel_crop(img, rel_coords):
     coords = rel_2_pil(rel_coords, img.width, img.height)
     return img.crop(coords)
 
+def cv2_2_rel(coords, w, h, offset=None):
+    offset = (0,0,0,0) if offset is None else offset
+    dx,dy,_1,_2 = offset
+    x, y, cw, ch = coords
+    x1=x+dx
+    x2=x1+cw
+    y1=y+dy
+    y2=y1+ch
+    return [x1/w, x2/w, y1/h, y2/h]
+
+def rel_2_cv2(rel_coords, w, h):
+    x1,y1,x2,y2 = rel_2_pil(rel_coords, w, h)
+    x = x1
+    y = y1
+    w = x2-x
+    h = y2-y
+    return [x,y,w,h]
+
+
+
+
 class ImageContainer:
     def __init__(self, fname, bulk_render=True):
         self.info = pdfinfo_from_path(fname)
