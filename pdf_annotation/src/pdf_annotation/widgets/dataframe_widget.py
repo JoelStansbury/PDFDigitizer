@@ -210,7 +210,7 @@ class DataFrame(VBox):
         default: 10
     """
     value = Int().tag(sync=True)
-    def __init__(self, df, num_rows=10, wrap_around=False, max_char=-1, **kwargs):
+    def __init__(self, df, num_rows=10, wrap_around=False, max_char=1000, **kwargs):
         super().__init__(**kwargs)
         self.max_char = max_char
 
