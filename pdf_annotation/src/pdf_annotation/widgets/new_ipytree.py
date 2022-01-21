@@ -5,7 +5,6 @@ from collections import defaultdict
 from pathlib import Path
 from traitlets import Unicode, Instance, observe, link, List
 
-from ..utils.update_json_data import clean
 from ..utils.image_utils import rel_2_canvas
 
 NODE_TYPES = {}
