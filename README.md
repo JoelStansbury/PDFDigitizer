@@ -27,7 +27,8 @@ Follow instructions on `CONTRIBUTING.md` to get the development environment set 
 `layoutparser` is used to determine the location of textblocks, images, and section headers. There is not currently a way to automatically determine the hierarchical position of these items. 
 ![ezgif-3-51d38d81b3](https://user-images.githubusercontent.com/48299585/146793946-6af29c6d-d83c-4437-ac62-b56d2f787da8.gif)
 > Note: this is 4x speed
-> Also: That video is out-dated now. The AutoParse button will now attempt to sort all of the nodes. As well as attempting to deduce the 1st level of hierarchical structure.
+
+> Also: This video is out-dated now. The AutoParse button will now attempt to sort all of the nodes. As well as attempting to deduce the 1st level of hierarchical structure.
 
 ### Table Parsing
 ![image](https://user-images.githubusercontent.com/48299585/150610905-566d6e33-b2ac-4eed-b4c5-463f1d9e35f2.png)
