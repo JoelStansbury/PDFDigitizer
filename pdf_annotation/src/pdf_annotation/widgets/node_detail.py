@@ -14,16 +14,13 @@ import pytesseract as tess
 from PIL import Image
 
 from ..utils.nlp import tfidf_similarity
-from ..utils.image_utils import ImageContainer, pil_2_rel, rel_2_pil
+from ..utils.image_utils import ImageContainer, pil_2_rel, rel_2_pil, rel_2_cv2, cv2_2_rel
 from ..utils.generate_training_data import get_text_blocks
 from .dataframe_widget import DataFrame
-from ..utils.table_extraction import img_2_table
+from ..utils.table_extraction import img_2_cells, cells_2_table
 
-try:
-    import spacy
-    nlp = spacy.load("en_core_web_lg")
-except:
-    nlp = None
+nlp = spacy.load("en_core_web_lg")
+lp_model = lp.models.PaddleDetectionLayoutModel('lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config')
 
 
 NODE_KWARGS = {
@@ -392,21 +389,21 @@ class AutoTools(MyTab):
     def __init__(self, node):
         super().__init__()
 
-        extract_text_btn = Button(
-            icon="align-left",
+        tesseract_btn = Button(
+            description="Text Only",
             tooltip="Detect and parse text-blocks",
         )
-        extract_text_btn.on_click(self.extract_text)
-#         self.refresh_btn.add_class("eris-small-btn")
-#         self.refresh_btn.on_click(self.refresh)
+        layoutparser_btn = Button(
+            description="Parse Document",
+            tooltip="Detect and parse (sections, textblocks, and images)",
+        )
+        tesseract_btn.on_click(self.extract_text)
+        layoutparser_btn.on_click(self.extract_layout)
+        self.progress = HTML()
+        self.children = [VBox([layoutparser_btn,tesseract_btn,self.progress])]
 
-#         self.utils = HBox(
-#             [
-#                 self.refresh_btn
-#             ]
-#         )
-        self.children = [extract_text_btn]
     def extract_text(self, _):
+        self.progress.value = "Detecting Textblocks: ..."
         for tb in get_text_blocks(self.node._path):
             self.node.add_node(
                 MyNode(
@@ -453,11 +450,29 @@ class AutoTools(MyTab):
                             parent=self.node._id
                         )
                     )
-                elif block.type in ["Figure", "Table"]:
+                elif block.type == "Figure":
                     self.node.add_node(
                         MyNode(
                             data={
                                 "type": "image",
+                                "path": self.node._path,
+                                "children": {},
+                                "content": [
+                                    {
+                                        "value":None,
+                                        "page":page_num,
+                                        "coords":pil_2_rel(block.coordinates, img.width, img.height)
+                                    }
+                                ]
+                            },
+                            parent=self.node._id
+                        )
+                    )
+                elif block.type == "Table":
+                    self.node.add_node(
+                        MyNode(
+                            data={
+                                "type": "table",
                                 "path": self.node._path,
                                 "children": {},
                                 "content": [
@@ -479,24 +494,31 @@ class TableTools(MyTab):
         super().__init__()
         self.node = node
 
-        text = Button(
+        self.text = Button(
             icon="align-left",
             tooltip="Add a description for the table",
         )
-        text.on_click(self.add_node)
-        text.add_class("eris-small-btn")
+        self.text.on_click(self.add_node)
+        self.text.add_class("eris-small-btn")
 
         self._types = {
-            text: "text",
+            self.text: "text",
         }
 
-        parse_btn = Button(
+        self.parse_btn = Button(
             description="Parse Content",
             tooltip="Add a description for the table",
         )
-        parse_btn.on_click(self.parse)
+        self.parse_btn.on_click(self.parse)
 
-        self.children = [text, parse_btn, self.delete_btn]
+        
+        self.parse_table_btn = Button(
+            description="Parse Table (Enclosed Cells)",
+            tooltip="Construct a dataframe from the image. This option works well on tables with borders around each cell",
+        )
+        self.parse_table_btn.on_click(self.parse_table)
+
+        self.children = [self.text, self.parse_btn, self.parse_table_btn, self.delete_btn]
     
     def parse(self, _):
         path = self.node._path
@@ -505,6 +527,43 @@ class TableTools(MyTab):
         coords = self.node.content[0]["coords"]
         
         cropped_img = img.crop(rel_2_pil(coords, img.width, img.height))
-        cropped_img.show()
-        img_2_table(cropped_img)
+
+        img_cv2_coords = rel_2_cv2(coords, img.width, img.height)
+        items = img_2_cells(cropped_img)
+        for cv2_coords, text in items:
+            rel_coords = cv2_2_rel(cv2_coords, img.width, img.height, img_cv2_coords)
+            self.node.add_node(MyNode(
+                data={
+                    "type": "text", 
+                    "path": self.node._path,
+                    "children": {}, 
+                    "content":[
+                        {
+                            "value": text,
+                            "page": self.node.content[0]["page"],
+                            "coords": rel_coords
+                        }
+                    ],
+                },
+                parent=self.node._id
+            ))
+        
+    def parse_table(self, _):
+        path = self.node._path
+        imgs = ImageContainer(path, bulk_render=False)
+        img = imgs[self.node.content[0]["page"]]
+        coords = self.node.content[0]["coords"]
+        
+        cropped_img = img.crop(rel_2_pil(coords, img.width, img.height))
+        items = img_2_cells(cropped_img)
+        df = cells_2_table(items)
+        self.children = [
+            VBox(
+                children=[
+                    HBox(children=[self.text, self.parse_btn, self.parse_table_btn, self.delete_btn]),
+                    DataFrame(df, max_char=20)
+                ]
+            )
+        ]
+
         # print("test")
