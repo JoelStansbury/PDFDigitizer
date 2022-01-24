@@ -18,9 +18,9 @@ commands:
     description: setup development environment
     env_spec: developer
     unix: |
-      cd ipytree && pip install -e . && cd ../ && pip install -e pdf_annotation --no-dependencies
+      pip install -e ipytree_dnd --no-dependencies && pip install -e pdf_annotation --no-dependencies
     windows: |
-      cd ipytree && pip install -e . && cd ../ && pip install -e pdf_annotation --no-dependencies
+      pip install -e ipytree_dnd --no-dependencies && pip install -e pdf_annotation --no-dependencies
   lint:
     description: lint the code
     env_spec: developer
@@ -68,9 +68,6 @@ env_specs:
     - poppler
     - pytesseract
     - tesseract
-    - pip:
-      - layoutparser
-      - layoutparser[paddledetection]
 
   user:
     description: The environment for running the notebooks
@@ -81,11 +78,11 @@ env_specs:
     packages:
     - numpy
     - pandas
-    - opencv
     - pip
     - pip:
-      - layoutparser
-      - "layoutparser[paddledetection]"
+      - layoutparser # Not on conda-forge
+      - "layoutparser[paddledetection]" # Also not on conda-forge
+      - opencv-python # On conda-forge but conda cannot find it for some reason
   developer:
     description: The environment for developing the tool
     inherit_from:
