@@ -18,9 +18,9 @@ commands:
     description: setup development environment
     env_spec: developer
     unix: |
-      pip install -e pdf_annotation --no-dependencies
+      cd ipytree && pip install -e . && cd ../ && pip install -e pdf_annotation --no-dependencies
     windows: |
-      pip install -e pdf_annotation --no-dependencies
+      cd ipytree && pip install -e . && cd ../ && pip install -e pdf_annotation --no-dependencies
   lint:
     description: lint the code
     env_spec: developer
@@ -53,7 +53,6 @@ env_specs:
     - ipycanvas
     - ipycytoscape
     - ipyevents
-    - ipytree
     - ipywidgets
     - jupyterlab
     - traitlets
@@ -82,7 +81,7 @@ env_specs:
     packages:
     - numpy
     - pandas
-    - opencv-python
+    - opencv
     - pip
     - pip:
       - layoutparser
