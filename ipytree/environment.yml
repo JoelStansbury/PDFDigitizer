@@ -1,0 +1,6 @@
+name: ipytree
+channels:
+  - conda-forge
+dependencies:
+  - ipytree=0.2.1
+  - ipyleaflet
