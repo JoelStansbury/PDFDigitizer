@@ -1,0 +1,7 @@
+[report]
+omit =
+    setup.py
+    ipypdf/__main__.py
+    ipypdf/_version.py
+    versioneer.py
+    tests/*

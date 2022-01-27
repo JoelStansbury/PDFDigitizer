@@ -8,7 +8,7 @@ import matplotlib.colors as mcolors
 from random import shuffle
 import pandas as pd
 import spacy
-import layoutparser as lp
+# import layoutparser as lp
 import pytesseract as tess
 from PIL import Image
 
@@ -21,7 +21,7 @@ from .dataframe_widget import DataFrame
 from ..utils.table_extraction import img_2_cells, cells_2_table
 
 nlp = spacy.load("en_core_web_lg")
-lp_model = lp.models.PaddleDetectionLayoutModel('lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config')
+# lp_model = lp.models.PaddleDetectionLayoutModel('lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config')
 
 
 NODE_KWARGS = {
@@ -467,19 +467,18 @@ class AutoTools(MyTab):
                 rel_coords = pil_2_rel(coords, img.width, img.height)
                 content = [{"value":text,"page":page_num,"coords":rel_coords}]
                 if block.type == "Title":
-                    self.node.add_node(
-                        last_section := MyNode(
-                            label=text,
-                            data={
-                                "type": "section",
-                                "path": self.node._path,
-                                "children": {},
-                                "content": content,
-                                "label":text
-                            },
-                            parent=self.node._id
-                        )
+                    last_section = MyNode(
+                        label=text,
+                        data={
+                            "type": "section",
+                            "path": self.node._path,
+                            "children": {},
+                            "content": content,
+                            "label":text
+                        },
+                        parent=self.node._id
                     )
+                    self.node.add_node(last_section)
                 elif block.type in ["List", "Text"]:
                     last_section.add_node(
                         MyNode(
@@ -511,23 +510,22 @@ class AutoTools(MyTab):
                         )
                     )
                 elif block.type == "Table":
-                    last_section.add_node(
-                        table_node := MyNode(
-                            data={
-                                "type": "table",
-                                "path": self.node._path,
-                                "children": {},
-                                "content": [
-                                    {
-                                        "value":None,
-                                        "page":page_num,
-                                        "coords":pil_2_rel(block.coordinates, img.width, img.height)
-                                    }
-                                ]
-                            },
-                            parent=self.node._id
-                        )
+                    table_node = MyNode(
+                        data={
+                            "type": "table",
+                            "path": self.node._path,
+                            "children": {},
+                            "content": [
+                                {
+                                    "value":None,
+                                    "page":page_num,
+                                    "coords":pil_2_rel(block.coordinates, img.width, img.height)
+                                }
+                            ]
+                        },
+                        parent=self.node._id
                     )
+                    last_section.add_node(table_node)
                     TableTools(table_node).parse_table()
             self.progress.value = ""
 
