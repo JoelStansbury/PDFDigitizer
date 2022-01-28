@@ -8,7 +8,6 @@ import matplotlib.colors as mcolors
 from random import shuffle
 import pandas as pd
 import spacy
-# import layoutparser as lp
 import pytesseract as tess
 from PIL import Image
 
@@ -21,7 +20,6 @@ from .dataframe_widget import DataFrame
 from ..utils.table_extraction import img_2_cells, cells_2_table
 
 nlp = spacy.load("en_core_web_lg")
-# lp_model = lp.models.PaddleDetectionLayoutModel('lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config')
 
 
 NODE_KWARGS = {
@@ -394,16 +392,49 @@ class AutoTools(MyTab):
             description="Text Only",
             tooltip="Detect and parse text-blocks",
         )
-        layoutparser_btn = Button(
+        self.layoutparser_btn = Button(
             description="Parse Document",
             tooltip="Detect and parse (sections, textblocks, and images)",
         )
         tesseract_btn.on_click(self.extract_text)
-        layoutparser_btn.on_click(self.extract_layout)
+        self.layoutparser_btn.on_click(self.extract_layout)
         self.progress = HTML()
-        self.children = [VBox([layoutparser_btn,tesseract_btn,self.progress])]
 
-    def extract_text(self, _):
+        self.lp_desc = HTML(value="Layout Extraction will use <a href=\"htt"
+            + "ps://github.com/Layout-Parser/layout-parser\" style=\"color:blue;\">layoutparser</a> to find"
+            + " and label images, tables, titles, and normal text within"
+            + " the document. Then, the coordinates of each node are used"
+            + " to predict the \"natural order\" with which the nodes"
+            + " would be read by.",
+            layout={"width":"400px"}
+        )
+        self.te_desc = HTML(value="Text Extraction uses <a href=\""
+            + "https://github.com/tesseract-ocr/tesseract\" style=\"color:blue;\">tesseract</a> to find"
+            + " and label textblocks within the document. The order is typically"
+            + " more accurate than that of LayoutExtraction. It also tends to "
+            + "handle slide shows better than layoutparser as it was trained "
+            + "on a much more diverse dataset.",
+            layout={"width":"400px"}
+        )
+
+
+        self.text_extraction = VBox()
+        self.text_extraction.children=[self.te_desc,tesseract_btn]
+        self.layout_extraction = VBox()
+        self.init_layoutparser()
+
+        self.options = VBox(
+            children=[
+                self.text_extraction,
+                self.layout_extraction
+            ]
+        )
+
+        self.children = [self.options]
+
+    def extract_text(self, btn):
+        if isinstance(btn, Button):
+            btn.disabled = True
         self.progress.value = "Detecting Textblocks: ..."
         for tb in get_text_blocks(self.node._path):
             self.node.add_node(
@@ -412,15 +443,20 @@ class AutoTools(MyTab):
                     parent=self.node._id
                 )
             )
-        self.progress.value = ""
-    def extract_layout(self, _):
+        
+        if isinstance(btn, Button):
+            btn.disabled = False
+    def extract_layout(self, btn=None):
+        if isinstance(btn, Button):
+            btn.disabled = True
+        self.layoutparser_btn.disabled=True
         path = self.node._path
         imgs = ImageContainer(path, bulk_render=False)
 
         last_section = self.node
         for page_num, img in enumerate(imgs):
             self.progress.value = f"LayoutParser: {page_num+1}/{imgs.info['Pages']}"
-            layout = list(lp_model.detect(img))
+            layout = list(self.lp_model.detect(img))
 
 
 
@@ -527,9 +563,42 @@ class AutoTools(MyTab):
                     )
                     last_section.add_node(table_node)
                     TableTools(table_node).parse_table()
-            self.progress.value = ""
+        if isinstance(btn, Button):
+            btn.disabled = False
+    
+    def init_layoutparser(self):
+        try:
+            import layoutparser as lp
+            self.lp_model = lp.models.PaddleDetectionLayoutModel('lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config')
+            
+            self.layout_extraction.children = [
+                self.lp_desc,
+                self.layoutparser_btn
+            ]
+        except ImportError:
+            install_btn = Button(description='Install')
+            install_btn.on_click(self.install_layoutparser)
+            self.layout_extraction.children = [
+                self.lp_desc,
+                HTML(value='<p style="color:red;"> layoutparser is not installed</p>'),
+                install_btn
+            ]
 
-
+    def install_layoutparser(self, btn=None):
+        if isinstance(btn, Button):
+            btn.disabled = True
+        import subprocess
+        import sys
+        try:
+            subprocess.check_call(
+                [sys.executable, '-m', 'pip', 'install', 'layoutparser']
+            )
+            subprocess.check_call(
+                [sys.executable, '-m', 'pip', 'install', 'layoutparser[paddledetection]']
+            )
+            self.init_layoutparser()
+        except subprocess.CalledProcessError:
+            btn.description = 'Installation Failed (see terminal output for more info)'
 class TableTools(MyTab):
     def __init__(self, node):
         super().__init__()
