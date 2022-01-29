@@ -87,9 +87,7 @@ env_specs:
     - pandas
     - pip
     - pip:
-      - layoutparser # Not on conda-forge
-      - "layoutparser[paddledetection]" # Also not on conda-forge
-      - opencv-python # On conda-forge but conda cannot find it for some reason
+      - opencv-python
   developer:
     description: The environment for developing the tool
     inherit_from:

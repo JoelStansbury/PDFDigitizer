@@ -24,7 +24,7 @@ nlp = spacy.load("en_core_web_lg")
 
 NODE_KWARGS = {
     "folder": [0,5],
-    "pdf": [1,6,5,4],
+    "pdf": [6,1,5,4],
     "section": [1,5],
     "text": [3,4],
     "image": [2],
@@ -50,9 +50,9 @@ class NodeDetail(Tab):
         ]
         self.titles = [
             "Info",
-            "Subsection Tools",
-            "Image Tools",
-            "Text Block Tools",
+            "Tools",
+            "ImageTools",
+            "TextTools",
             "Spacy",
             "Cytoscape",
             "AutoTools",
@@ -102,7 +102,11 @@ class MyTab(HBox):
         self.node = node
 
     def delete_node(self, _):
-        self.node.delete()
+        if self.node._type == "pdf":
+            for node in self.node.nodes:
+                node.delete()
+        else:
+            self.node.delete()
 
 
 class SubsectionTools(MyTab):
@@ -232,8 +236,6 @@ class SpacyInsights(MyTab):
 
 
 from ipycytoscape import CytoscapeWidget
-
-
 class Cytoscape(MyTab):
     def __init__(self, node):
         super().__init__()
@@ -405,7 +407,7 @@ class AutoTools(MyTab):
             + " and label images, tables, titles, and normal text within"
             + " the document. Then, the coordinates of each node are used"
             + " to predict the \"natural order\" with which the nodes"
-            + " would be read by.",
+            + " would be read.",
             layout={"width":"400px"}
         )
         self.te_desc = HTML(value="Text Extraction uses <a href=\""
@@ -446,6 +448,7 @@ class AutoTools(MyTab):
         
         if isinstance(btn, Button):
             btn.disabled = False
+    
     def extract_layout(self, btn=None):
         if isinstance(btn, Button):
             btn.disabled = True
@@ -599,6 +602,8 @@ class AutoTools(MyTab):
             self.init_layoutparser()
         except subprocess.CalledProcessError:
             btn.description = 'Installation Failed (see terminal output for more info)'
+
+
 class TableTools(MyTab):
     def __init__(self, node):
         super().__init__()
