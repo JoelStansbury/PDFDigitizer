@@ -11,7 +11,6 @@ NODE_TYPES = {}
 NODE_REGISTER = {}
 MAX_LEN = 20
 
-
 def truncate(s: str):
     ellipsis = "..." if len(s) > MAX_LEN else ""
     return s[:MAX_LEN] + ellipsis
@@ -70,7 +69,7 @@ def node_factory(directory):
 
     data["type"] = "folder"
     data["path"] = path
-    return MyNode(label=directory, data=data)
+    return MyNode(label=str(directory), data=data)
 
 
 def set_node_type(cursor, c_path):
@@ -228,3 +227,6 @@ class MyNode(Node):
         for c in self.nodes:
             html += c.to_html(level+1)
         return html
+
+    def __repr__(self):
+        return self.name

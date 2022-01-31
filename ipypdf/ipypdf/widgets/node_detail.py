@@ -15,7 +15,7 @@ from ..widgets.new_ipytree import MyNode
 from .new_ipytree import MyNode, NODE_REGISTER
 from ..utils.nlp import tfidf_similarity
 from ..utils.image_utils import ImageContainer, pil_2_rel, rel_2_pil, rel_2_cv2, cv2_2_rel
-from ..utils.generate_training_data import get_text_blocks
+from ..utils.tess_utils import get_text_blocks
 from .dataframe_widget import DataFrame
 from ..utils.table_extraction import img_2_cells, cells_2_table
 
@@ -114,12 +114,12 @@ class SubsectionTools(MyTab):
         super().__init__()
         self.node = node
 
-        text = Button(
+        self.text = Button(
             icon="align-left",
             tooltip="Add a new text node",
         )
-        text.on_click(self.add_node)
-        text.add_class("eris-small-btn")
+        self.text.on_click(self.add_node)
+        self.text.add_class("eris-small-btn")
 
         section = Button(
             icon="indent",
@@ -143,9 +143,9 @@ class SubsectionTools(MyTab):
         table.on_click(self.add_node)
         table.add_class("eris-small-btn")
 
-        self._types = {text: "text", section: "section", image: "image", table: "table"}
+        self._types = {self.text: "text", section: "section", image: "image", table: "table"}
 
-        self.children = [section, text, image, table, self.delete_btn]
+        self.children = [section, self.text, image, table, self.delete_btn]
 
 
 class ImageTools(MyTab):
@@ -261,6 +261,7 @@ class Cytoscape(MyTab):
             )
         ]
     def on_node_click(self, event):
+        self.node.selected=False
         NODE_REGISTER[event["data"]["id"]].selected=True
 
     def refresh(self, _=None):
@@ -389,27 +390,14 @@ class Cytoscape(MyTab):
 class AutoTools(MyTab):
     def __init__(self, node):
         super().__init__()
+        self.node = node
 
-        tesseract_btn = Button(
+        ################# Tesseract #################
+        self.tesseract_btn = Button(
             description="Text Only",
             tooltip="Detect and parse text-blocks",
         )
-        self.layoutparser_btn = Button(
-            description="Parse Document",
-            tooltip="Detect and parse (sections, textblocks, and images)",
-        )
-        tesseract_btn.on_click(self.extract_text)
-        self.layoutparser_btn.on_click(self.extract_layout)
-        self.progress = HTML()
-
-        self.lp_desc = HTML(value="Layout Extraction will use <a href=\"htt"
-            + "ps://github.com/Layout-Parser/layout-parser\" style=\"color:blue;\">layoutparser</a> to find"
-            + " and label images, tables, titles, and normal text within"
-            + " the document. Then, the coordinates of each node are used"
-            + " to predict the \"natural order\" with which the nodes"
-            + " would be read.",
-            layout={"width":"400px"}
-        )
+        self.tesseract_btn.on_click(self.extract_text)
         self.te_desc = HTML(value="Text Extraction uses <a href=\""
             + "https://github.com/tesseract-ocr/tesseract\" style=\"color:blue;\">tesseract</a> to find"
             + " and label textblocks within the document. The order is typically"
@@ -418,12 +406,26 @@ class AutoTools(MyTab):
             + "on a much more diverse dataset.",
             layout={"width":"400px"}
         )
-
-
         self.text_extraction = VBox()
-        self.text_extraction.children=[self.te_desc,tesseract_btn]
+        self.text_extraction.children=[self.te_desc,self.tesseract_btn]
+        ##############################################
+
+
+        ################ LayoutParser ################
         self.layout_extraction = VBox()
+        self.layoutparser_btn = Button()
+        # button description and tooltip generated in self.init_layoutparser
+        self.lp_desc = HTML(value="Layout Extraction will use <a href=\"htt"
+            + "ps://github.com/Layout-Parser/layout-parser\" style=\"color:blue;\">layoutparser</a> to find"
+            + " and label images, tables, titles, and normal text within"
+            + " the document. Then, the coordinates of each node are used"
+            + " to predict the \"natural order\" with which the nodes"
+            + " would be read.",
+            layout={"width":"400px"}
+        )
+        self.text_extraction.children=[self.lp_desc,self.layoutparser_btn]
         self.init_layoutparser()
+        ##############################################
 
         self.options = VBox(
             children=[
@@ -434,10 +436,9 @@ class AutoTools(MyTab):
 
         self.children = [self.options]
 
-    def extract_text(self, btn):
+    def extract_text(self, btn=None):
         if isinstance(btn, Button):
             btn.disabled = True
-        self.progress.value = "Detecting Textblocks: ..."
         for tb in get_text_blocks(self.node._path):
             self.node.add_node(
                 MyNode(
@@ -458,10 +459,7 @@ class AutoTools(MyTab):
 
         last_section = self.node
         for page_num, img in enumerate(imgs):
-            self.progress.value = f"LayoutParser: {page_num+1}/{imgs.info['Pages']}"
             layout = list(self.lp_model.detect(img))
-
-
 
             # TODO: Swap this out with a system that includes tesseract.
             #   Tess seems to be able to detect page-breaks pretty reliably
@@ -574,17 +572,19 @@ class AutoTools(MyTab):
             import layoutparser as lp
             self.lp_model = lp.models.PaddleDetectionLayoutModel('lp://PubLayNet/ppyolov2_r50vd_dcn_365e/config')
             
+            self.layoutparser_btn.description = 'Parse Layout'
+            self.layoutparser_btn.on_click(self.extract_layout)
             self.layout_extraction.children = [
                 self.lp_desc,
                 self.layoutparser_btn
             ]
         except ImportError:
-            install_btn = Button(description='Install')
-            install_btn.on_click(self.install_layoutparser)
+            self.layoutparser_btn.description = 'Install'
+            self.layoutparser_btn.on_click(self.install_layoutparser)
             self.layout_extraction.children = [
                 self.lp_desc,
                 HTML(value='<p style="color:red;"> layoutparser is not installed</p>'),
-                install_btn
+                self.layoutparser_btn
             ]
 
     def install_layoutparser(self, btn=None):
@@ -601,8 +601,9 @@ class AutoTools(MyTab):
             )
             self.init_layoutparser()
         except subprocess.CalledProcessError:
-            btn.description = 'Installation Failed (see terminal output for more info)'
-
+            if isinstance(btn, Button):
+                btn.description = 'Installation Failed (see terminal output for more info)'
+                btn.on_click(self.install_layoutparser, remove=True)
 
 class TableTools(MyTab):
     def __init__(self, node):

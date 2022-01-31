@@ -7,3 +7,6 @@ Untitled.*
 envs/
 ap.bat
 unusedpdfs
+build
+*/.coverage
+*/junit.xml

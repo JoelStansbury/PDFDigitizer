@@ -18,16 +18,16 @@ commands:
     description: setup development environment
     env_spec: developer
     unix: |
-      pip install -e ipytree_dnd --no-dependencies && pip install -e . --no-dependencies
+      pip install -e ipypdf --no-dependencies
     windows: |
-      pip install -e ipytree_dnd --no-dependencies && pip install -e . --no-dependencies
+      pip install -e ipypdf --no-dependencies
   build:
     description: build a ipypdf conda package
     env_spec: developer
     unix: |
-      conda build . -c conda-forge
+      conda build ipypdf -c conda-forge --output-folder="build/"
     windows: |
-      conda build . -c conda-forge
+      conda build ipypdf -c conda-forge --output-folder="build/"
   lint:
     description: lint the code
     env_spec: developer
@@ -43,6 +43,10 @@ commands:
     env_spec: developer
     unix: code .
     windows: code .
+  test:
+    description: run pytest
+    windows: pytest --cov=ipypdf tests/
+    unix: pytest --cov=ipypdf tests/
 
 channels:
 - conda-forge
@@ -94,6 +98,7 @@ env_specs:
     - user
     packages:
     - black
+    - conda-build
     - coverage
     - flake8
     - isort

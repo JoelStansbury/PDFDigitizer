@@ -5,16 +5,11 @@
 # for indicating the position of the section relative to the document tree.
 # The current plan is to pass this data into an LSTM to predict the hierarchy.
 
-import json
-from pathlib import Path
-
-import numpy as np
 import pytesseract as tess
 import pandas as pd
 
-from ..widgets.new_ipytree import MyNode
-from .image_utils import rel_2_pil, pil_2_rel, ImageContainer
-from .nlp import levenshtein_distance
+from .image_utils import pil_2_rel, ImageContainer
+
 
 def get_ocr_data(path):
     imgs = ImageContainer(path)
@@ -58,42 +53,3 @@ def get_text_blocks(path):
         text = " ".join(tmp["text"])
         text_blocks.append({"value":text,"page":w["page"],"coords":coords})
     return text_blocks
-
-
-def do_other_stuff():
-    
-    path = Path("../pdfs/ARMY/2020avcad.pdf")
-
-    with path.with_suffix(".json").open("r") as f:
-        children = json.load(f)
-    node = MyNode(path=path, data={"type":"pdf", "children":children})
-    sections = [x for x in node.dfs() if x._type == "section"]
-
-    df = get_ocr_data(path)
-
-    i = 1
-    coords = sections[i].content[0]["coords"]
-    label = sections[i].content[0]["value"]
-    page = sections[i].content[0]["page"]
-    w = imgs[page].width
-    h = imgs[page].height
-    left, top, right, bottom = rel_2_pil(coords, w, h)
-    b_height = bottom - top
-    first_word = label.split()[0]
-    score = (
-        (
-            100 * (abs(df["top"]-top)) / b_height
-            + (abs(df["left"]-left))
-        ) 
-        + (100 * np.array([levenshtein_distance(x, first_word) for x in df["text"]]))
-        + (10000 * np.array([x != page for x in df["page"]]))
-    )
-
-    print(label)
-
-    start = score.argmin()
-    # NOTE: Possible improvement could involve adding tokens until levenshtein_distance jumps up
-    df.iloc[start:start+len(label.split())]
-
-    # TODO: Add visual features for font
-    # TODO: Add indicator for going up/down the tree
