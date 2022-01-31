@@ -2,7 +2,18 @@
 A Jupyter-based tool to help parse out structured text from a PDF document and explore the contents.
 
 ## Installation
-Follow instructions on `CONTRIBUTING.md` to get the development environment set up.  Currently this is the only way to get setup.
+### Pip
+Install Tesseract.
+```bash
+pip install "git+https://github.com/JoelStansbury/PDFDigitizer.git#egg=ipypdf&subdirectory=ipypdf@conda-package"
+python -m spacy.load en_core_web_lg
+```
+### Conda
+> Coming soon
+
+### Development
+
+Follow instructions on `CONTRIBUTING.md` to get the development environment set up.
 
 ## Usage
 > Make sure you activate the base environment (i.e., `ipypdf`) by:
