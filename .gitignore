@@ -7,6 +7,7 @@ Untitled.*
 envs/
 ap.bat
 unusedpdfs
-build
+build/*
+!build/*.tar.bz2
 */.coverage
 */junit.xml
